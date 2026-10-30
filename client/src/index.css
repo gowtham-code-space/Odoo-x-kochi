@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --color-background: #090c13;
+  --color-surface: #111622;
+  --color-surface-raised: #182030;
+  --color-input: #131926;
+  --color-border: #222c3f;
+  --color-border-subtle: #1c2433;
+  --color-foreground: #f5f3ee;
+  --color-muted: #1a2233;
+  --color-muted-foreground: #8d98ab;
+  --color-primary: #d92d65;
+  --color-primary-hover: #c42457;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1c2436;
+  --color-secondary-foreground: #f5f3ee;
+  --color-success: #0f9d6c;
+  --color-warning: #e8a013;
+  --color-error: #ff5c3a;
+  --color-error-foreground: #090c13;
+  --color-royal: #3b5bff;
+  --color-gold: #c99a2b;
+
+  --font-headings: "Space Grotesk", sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+@theme {
+  --color-background: #090c13;
+  --color-surface: #111622;
+  --color-surface-raised: #182030;
+  --color-input: #131926;
+  --color-border: #222c3f;
+  --color-border-subtle: #1c2433;
+  --color-foreground: #f5f3ee;
+  --color-muted: #1a2233;
+  --color-muted-foreground: #8d98ab;
+  --color-primary: #d92d65;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1c2436;
+  --color-secondary-foreground: #f5f3ee;
+  --color-success: #0f9d6c;
+  --color-warning: #e8a013;
+  --color-error: #ff5c3a;
+  --color-error-foreground: #090c13;
+  --color-royal: #3b5bff;
+  --color-gold: #c99a2b;
+
+  --font-headings: "Space Grotesk";
+  --font-body: "Inter";
+  --font-mono: "IBM Plex Mono";
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+
+#root {
+  min-height: 100%;
+}
+
+/* Explicit form element styling to ensure dark SaaS aesthetic across all browsers */
+input, textarea, select {
+  background-color: var(--color-input) !important;
+  color: var(--color-foreground) !important;
+  border: 1px solid var(--color-border) !important;
+  font-family: var(--font-body);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px rgba(217, 45, 101, 0.25) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--color-muted-foreground) !important;
+  opacity: 0.7;
+}
+
+/* Base custom font helpers */
+.font-headings {
+  font-family: var(--font-headings);
+  letter-spacing: -0.025em;
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
+}
+
+/* Tabular nums */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--color-muted) 25%, var(--color-surface-raised) 50%, var(--color-muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* Status dot pulse */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* In-place spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 0.75s linear infinite;
+}
