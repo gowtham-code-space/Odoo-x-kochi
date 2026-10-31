@@ -42,6 +42,12 @@ Working style
 - Prefer the smallest viable implementation that fits the existing architecture and the hackathon scope.
 - Do not start coding until the initial repository and document audit is complete.
 
+Git checkpoint workflow
+- After a completed feature or phase passes its relevant frontend/backend tests and `git diff --check`, stage only the completed, relevant files, create a meaningful commit, and push it to the configured current branch.
+- Do not create commits for individual file saves or incomplete scaffolding. Keep separate completed features in separate commits.
+- Before every commit, inspect `git status`, preserve existing work, and verify no `.env` files, credentials, API keys, dependency directories, build outputs, or database dumps are staged.
+- Never use `git reset --hard`, discard unrelated changes, overwrite the configured remote, or force-push. If push fails because of authentication, conflicts, or network state, report the failure and request the necessary resolution.
+
 @[Project Instructions](instruction.md)
 
 @[Active Design System](design/design.md)
