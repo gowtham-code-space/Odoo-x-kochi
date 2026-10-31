@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError } from '../../errors/HttpErrors.js';
 import { prisma } from '../../config/database.js';
 import { recordAudit } from '../../utils/audit.js';
+import { createOrganizationNotification } from '../../utils/notifications.js';
 import { nextBillingDate } from '../../utils/billing.js';
 import { evaluateDiscount } from '../../utils/discounts.js';
 import { calculateLine, fromPaise, percentageOf, sumMoney, toPaise } from '../../utils/money.js';
@@ -140,6 +141,13 @@ export async function createInvoice(organizationId, input, actor) {
     });
   });
   await recordAudit({ organizationId, userId: actor?.id, action: 'invoice.created', resource: 'invoice', resourceId: invoice.id });
+  await createOrganizationNotification({
+    organizationId,
+    type: 'INVOICE_CREATED',
+    title: 'Invoice created',
+    body: 'Invoice ' + invoice.number + ' was created for ' + invoice.customerName + '.',
+    metadata: { invoiceId: invoice.id, customerId: invoice.customerId },
+  });
   return invoice;
 }
 
@@ -159,6 +167,13 @@ export async function transitionInvoice(id, organizationId, nextStatus, actor) {
   if (!allowed.includes(invoice.status)) throw new ConflictError(`Invoice cannot move from ${invoice.status} to ${nextStatus}`);
   const updated = await prisma.invoice.update({ where: { id }, data: { status: nextStatus }, include: invoiceInclude });
   await recordAudit({ organizationId, userId: actor?.id, action: `invoice.${nextStatus.toLowerCase()}`, resource: 'invoice', resourceId: id });
+  await createOrganizationNotification({
+    organizationId,
+    type: 'INVOICE_' + nextStatus,
+    title: 'Invoice ' + nextStatus.toLowerCase(),
+    body: 'Invoice ' + updated.number + ' is now ' + nextStatus.toLowerCase() + '.',
+    metadata: { invoiceId: updated.id, customerId: updated.customerId },
+  });
   return updated;
 }
 
@@ -168,7 +183,7 @@ export async function generateRecurringInvoice(subscriptionId, now = new Date())
       where: { id: subscriptionId },
       include: { plan: { include: { product: true } }, customer: true, discount: true },
     });
-    if (!subscription || subscription.status !== 'ACTIVE' || !subscription.nextBillingDate || subscription.nextBillingDate > now) return null;
+    if (!subscription || !['ACTIVE', 'IN_PROGRESS'].includes(subscription.status) || !subscription.nextBillingDate || subscription.nextBillingDate > now) return null;
     const periodStart = subscription.nextBillingDate;
     const periodEnd = nextBillingDate(periodStart, subscription.plan.billingFrequency);
     const dueDate = new Date(periodStart);
@@ -196,9 +211,28 @@ export async function generateRecurringInvoice(subscriptionId, now = new Date())
   });
 }
 
-export async function runRecurringBilling(now = new Date()) {
-  const run = await prisma.billingRun.create({ data: {} });
-  const due = await prisma.subscription.findMany({ where: { status: 'ACTIVE', nextBillingDate: { lte: now } }, select: { id: true } });
+export async function markOverdueInvoices(now = new Date(), organizationId) {
+  return prisma.invoice.updateMany({
+    where: {
+      ...(organizationId ? { organizationId } : {}),
+      status: { in: ['CONFIRMED', 'POSTED', 'PARTIAL'] },
+      dueDate: { lt: now },
+      amountDue: { gt: 0 },
+    },
+    data: { status: 'OVERDUE' },
+  });
+}
+
+export async function runRecurringBilling(now = new Date(), organizationId = null) {
+  const run = await prisma.billingRun.create({ data: { organizationId } });
+  const due = await prisma.subscription.findMany({
+    where: {
+      ...(organizationId ? { organizationId } : {}),
+      status: { in: ['ACTIVE', 'IN_PROGRESS'] },
+      nextBillingDate: { lte: now },
+    },
+    select: { id: true },
+  });
   let created = 0;
   const failures = [];
   for (const subscription of due) {
@@ -206,11 +240,32 @@ export async function runRecurringBilling(now = new Date()) {
       const invoice = await generateRecurringInvoice(subscription.id, now);
       if (invoice) created += 1;
     } catch (error) {
-      failures.push({ subscriptionId: subscription.id, message: error.message });
+      // A unique billing-period constraint makes overlapping workers safe.
+      if (error.code !== 'P2002') failures.push({ subscriptionId: subscription.id, message: error.message });
     }
   }
-  return prisma.billingRun.update({
+  const overdue = await markOverdueInvoices(now, organizationId);
+  const completed = await prisma.billingRun.update({
     where: { id: run.id },
     data: { completedAt: new Date(), status: failures.length ? 'COMPLETED_WITH_FAILURES' : 'COMPLETED', subscriptionsProcessed: due.length, invoicesCreated: created, failures: failures.length ? failures : undefined },
   });
+  if (organizationId && (created || overdue.count)) {
+    await createOrganizationNotification({
+      organizationId,
+      type: 'BILLING_RUN_COMPLETED',
+      title: 'Billing run completed',
+      body: 'Created ' + created + ' invoice(s) and marked ' + overdue.count + ' invoice(s) overdue.',
+      metadata: { billingRunId: completed.id, invoicesCreated: created, overdueInvoices: overdue.count },
+    });
+  }
+  return completed;
+}
+
+export async function listBillingRuns(organizationId, { page = 1, limit = 20 } = {}) {
+  const where = { organizationId };
+  const [runs, total] = await Promise.all([
+    prisma.billingRun.findMany({ where, orderBy: { startedAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+    prisma.billingRun.count({ where }),
+  ]);
+  return { runs, total, page, limit, totalPages: Math.ceil(total / limit) };
 }

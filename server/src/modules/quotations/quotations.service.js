@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError } from '../../errors/HttpErrors.js';
 import { prisma } from '../../config/database.js';
 import { recordAudit } from '../../utils/audit.js';
+import { createOrganizationNotification } from '../../utils/notifications.js';
 import { calculateLine, sumMoney } from '../../utils/money.js';
 import * as repo from './quotations.repository.js';
 
@@ -70,6 +71,13 @@ async function transition(id, organizationId, from, to, actor) {
   if (!from.includes(quotation.status)) throw new ConflictError(`Quotation cannot move from ${quotation.status} to ${to}`);
   const updated = await repo.setQuotationStatus(id, to);
   await recordAudit({ organizationId, userId: actor?.id, action: `quotation.${to.toLowerCase()}`, resource: 'quotation', resourceId: id });
+  await createOrganizationNotification({
+    organizationId,
+    type: 'QUOTATION_' + to,
+    title: 'Quotation ' + to.toLowerCase(),
+    body: 'Quotation ' + updated.number + ' is now ' + to.toLowerCase() + '.',
+    metadata: { quotationId: updated.id, customerId: updated.customerId },
+  });
   return updated;
 }
 

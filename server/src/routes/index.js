@@ -15,6 +15,8 @@ import invoiceRoutes from '../modules/invoices/invoices.routes.js';
 import paymentRoutes from '../modules/payments/payments.routes.js';
 import portalRoutes from '../modules/portal/portal.routes.js';
 import notificationRoutes from '../modules/notifications/notifications.routes.js';
+import taxRoutes from '../modules/taxes/taxes.routes.js';
+import billingRoutes from '../modules/billing/billing.routes.js';
 
 const router = Router();
 
@@ -48,6 +50,8 @@ router.use('/organizations/:organizationId/invoices', invoiceRoutes);
 router.use('/organizations/:organizationId/payments', paymentRoutes);
 router.use('/organizations/:organizationId/portal', portalRoutes);
 router.use('/organizations/:organizationId/notifications', notificationRoutes);
+router.use('/organizations/:organizationId/taxes', taxRoutes);
+router.use('/organizations/:organizationId/billing', billingRoutes);
 
 export default router;
 

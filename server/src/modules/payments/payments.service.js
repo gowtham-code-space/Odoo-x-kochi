@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError } from '../../errors/HttpErrors.js';
 import { prisma } from '../../config/database.js';
 import { recordAudit } from '../../utils/audit.js';
+import { createOrganizationNotification } from '../../utils/notifications.js';
 import { fromPaise, toPaise } from '../../utils/money.js';
 import { getPaymentProvider } from './paymentProvider.js';
 
@@ -63,6 +64,13 @@ export async function recordManualPayment(organizationId, input, actor) {
     return paymentRecord;
   });
   await recordAudit({ organizationId, userId: actor?.id, action: 'payment.recorded', resource: 'payment', resourceId: payment.id, metadata: { invoiceId: input.invoiceId } });
+  await createOrganizationNotification({
+    organizationId,
+    type: 'PAYMENT_SUCCEEDED',
+    title: 'Payment recorded',
+    body: 'Payment ' + payment.number + ' was recorded against invoice ' + payment.invoice.number + '.',
+    metadata: { paymentId: payment.id, invoiceId: input.invoiceId },
+  });
   return payment;
 }
 

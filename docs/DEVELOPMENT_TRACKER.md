@@ -15,6 +15,7 @@ PostgreSQL database odoo_kochi_dev; it is not a production deployment claim.
 | Organization/admin settings | Profile, business, members and billing settings UI | Member assignment, settings upsert, audit logs | Organization settings and audit log | Live profile/settings/member persistence test | Verified locally |
 | Dashboard/reports | Live KPI/dashboard/report views | Tenant-scoped aggregation for payments, MRR, ARR, subscriptions and invoices | Existing domain tables/indexes | Frontend production build and local API flow | Verified locally; trend/churn drill-down endpoints remain future work |
 | AI analytics | Explicit unavailable state when no provider is configured | Proposal-only interface; no raw SQL execution | N/A | UI does not substitute fake business results | Intentionally limited — no read-only execution engine |
+| Billing operations and tax settings | Admin tax-configuration tab | Tax CRUD, overdue marking, tenant-scoped billing trigger/run monitor, optional scheduler, persisted notifications | Existing tax, billing-run and notification models | Live local tax/overdue/run/notification HTTP flow | Verified locally |
 
 ## Database and migration state
 
@@ -40,6 +41,9 @@ PostgreSQL database odoo_kochi_dev; it is not a production deployment claim.
   subscription activation, recurring invoice, manual payment reconciliation,
   settings/profile persistence, customer-portal isolation, cross-tenant
   denial, and password-reset enumeration safety.
+- Additional live local HTTP verification passed for configurable GST tax,
+  tenant-scoped billing runs, overdue invoice transitions, run monitoring and
+  in-app notification persistence.
 
 ## Local environment requirements
 

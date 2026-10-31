@@ -45,6 +45,7 @@ All endpoints below are nested under /organizations/:organizationId.
 | Subscriptions | GET/POST subscriptions; GET/PATCH subscription; lifecycle actions | Admin/Staff |
 | Invoices | GET/POST invoices; GET/PATCH invoice; confirm/cancel/billing-run | Admin/Staff; billing run/cancel Admin |
 | Payments | GET payments; GET payment; record/initiate | Admin/Staff; Customer only for own invoice |
+| Taxes | GET taxes; GET/POST/PATCH/DELETE tax | Read Admin/Staff; write Admin |
 | Notifications | GET notifications; mark read | Verified organization member |
 | Customer portal | GET portal; PATCH billing profile; POST cancellation request | Customer only |
 
@@ -68,6 +69,13 @@ value; ARR is MRR times 12. Natural-language analytics does not execute raw SQL.
 The billing-run endpoint is idempotent at the invoice level through the
 unique subscriptionId and periodStart constraint. Financial calculations use
 integer paise in server code and persist PostgreSQL decimal values.
+
+Billing is available as a tenant-scoped admin operation at
+/organizations/:organizationId/billing/run. Its recent status and failure
+records are available at /organizations/:organizationId/billing/runs. The
+legacy invoice billing-run path remains available with the same tenant scope.
+When BILLING_SCHEDULER_ENABLED is true, the server schedules the same
+idempotent operation at BILLING_SCHEDULER_INTERVAL_MINUTES (minimum 15).
 
 Manual payment records are only reconciled after an operator records a payment
 reference. Gateway initiation has a provider interface but returns an explicit

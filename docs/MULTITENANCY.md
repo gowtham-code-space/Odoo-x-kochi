@@ -12,6 +12,7 @@ BharatLabAI employs a **shared-schema PostgreSQL pattern with explicit organizat
 | `Organization` | **Tenant Anchor** | The root partition boundary for data assets. |
 | `Membership` | **Tenant Scoped** | Links a `User` to an `Organization` with a specific role (`OWNER`, `ADMIN`, `MEMBER`). |
 | `AuditLog` | **Tenant Scoped** | Bound to `organizationId` for compliance inspection. |
+| Customer, Tax, BillingRun, Notification | **Tenant Scoped** | Every query uses verified organization context. |
 | Future domain models (e.g. `Runs`, `Datasets`) | **Tenant Scoped** | Must have an `organizationId` foreign key and compound index `[organizationId, id]`. |
 
 ---
@@ -55,4 +56,6 @@ Automated tests in `server/tests/tenant-isolation.test.js` verify:
 1. User A cannot view User B's organization resources.
 2. Cross-tenant access attempts return 404 access denied errors.
 3. Member roles are strictly checked before allowing administrative mutations.
+4. Billing jobs receive an organization scope for administrator requests; the
+   unique billing-period constraint protects against duplicate renewal invoices.
 

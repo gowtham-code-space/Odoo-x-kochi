@@ -17,4 +17,4 @@ export async function handleCreateInvoice(req, res) {
 export const handleUpdateInvoice = async (req, res) => res.json({ success: true, data: { invoice: await service.updateInvoice(req.params.id, req.organization.id, req.body, req.user) } });
 export const handleConfirmInvoice = async (req, res) => res.json({ success: true, data: { invoice: await service.transitionInvoice(req.params.id, req.organization.id, 'CONFIRMED', req.user) } });
 export const handleCancelInvoice = async (req, res) => res.json({ success: true, data: { invoice: await service.transitionInvoice(req.params.id, req.organization.id, 'CANCELLED', req.user) } });
-export const handleRunBilling = async (req, res) => res.json({ success: true, data: { run: await service.runRecurringBilling() } });
+export const handleRunBilling = async (req, res) => res.json({ success: true, data: { run: await service.runRecurringBilling(new Date(), req.organization.id) } });

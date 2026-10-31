@@ -3,10 +3,12 @@ import { connectDatabase } from './config/database.js';
 import app from './app.js';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
+import { startRecurringBillingScheduler, stopRecurringBillingScheduler } from './jobs/recurringBilling.js';
 
 async function start() {
   try {
     await connectDatabase();
+    startRecurringBillingScheduler();
 
     const server = app.listen(env.PORT, () => {
       logger.info(`Nexus server running`, {
@@ -20,6 +22,7 @@ async function start() {
     const shutdown = async (signal) => {
       logger.info(`${signal} received — shutting down gracefully`);
       server.close(async () => {
+        stopRecurringBillingScheduler();
         const { disconnectDatabase } = await import('./config/database.js');
         await disconnectDatabase();
         logger.info('Server closed');

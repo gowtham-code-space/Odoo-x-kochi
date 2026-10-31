@@ -52,6 +52,18 @@ Each feature lives inside `server/src/modules/<feature>/` and implements:
 
 Cross-module communication occurs strictly via explicit service exports—never through direct mutation of another module's internal repository models.
 
+## 4. Billing reliability
+
+Recurring billing is an idempotent server job. A BillingRun records start,
+completion, processed subscriptions, invoices created and sanitized failures.
+The manual tenant-scoped admin trigger and optional process scheduler call the
+same service. The unique subscription and billing-period constraint prevents
+duplicate renewal invoices when workers overlap.
+
+The scheduler is disabled by default. Enable it only where one application
+instance owns schedules, or use a platform scheduler to call the protected
+billing operation.
+
 ## 3. Security Hardening
 
 - **Cookie-Based Sessions**: Signed JWTs with HS256 (`jose`) stored in `httpOnly`, `sameSite: 'lax'`, `secure: env.isProd` cookies. Tokens are inaccessible to JavaScript.

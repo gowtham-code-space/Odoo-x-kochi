@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError } from '../../errors/HttpErrors.js';
 import { prisma } from '../../config/database.js';
 import { recordAudit } from '../../utils/audit.js';
+import { createOrganizationNotification } from '../../utils/notifications.js';
 import { isPlanAvailable, nextBillingDate } from '../../utils/billing.js';
 import * as repo from './subscriptions.repository.js';
 
@@ -42,10 +43,15 @@ async function resolveCreationData(organizationId, input) {
   }
   if (!data.customerName || !data.customerEmail) throw new ConflictError('A customer is required');
 
+  const startDate = new Date(input.startDate);
+  const nextBill = plan.trialDays > 0
+    ? new Date(startDate.getTime() + plan.trialDays * 24 * 60 * 60 * 1000)
+    : nextBillingDate(startDate, plan.billingFrequency);
+
   return {
     ...data,
-    startDate: new Date(input.startDate),
-    nextBillingDate: nextBillingDate(input.startDate, plan.billingFrequency),
+    startDate,
+    nextBillingDate: nextBill,
     status: input.quotationId ? 'CONFIRMED' : 'DRAFT',
   };
 }
@@ -75,6 +81,13 @@ async function transition(id, organizationId, expected, target, actor, reason, f
   const updated = await repo.transitionSubscription(id, organizationId, current.status, target, reason, actor?.id, fields);
   if (!updated) throw new ConflictError('Subscription was changed by another request; retry the operation');
   await recordAudit({ organizationId, userId: actor?.id, action: `subscription.${target.toLowerCase()}`, resource: 'subscription', resourceId: id });
+  await createOrganizationNotification({
+    organizationId,
+    type: 'SUBSCRIPTION_' + target,
+    title: 'Subscription ' + target.toLowerCase(),
+    body: 'Subscription ' + updated.number + ' is now ' + target.toLowerCase() + '.',
+    metadata: { subscriptionId: updated.id, customerId: updated.customerId },
+  });
   return updated;
 }
 
