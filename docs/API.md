@@ -1,109 +1,81 @@
-# BharatLabAI REST API Specification (v1)
+# Odoo Subscription Management API (v1)
 
-Base URL: `/api/v1`  
-Protocol: HTTPS / HTTP (Dev)  
-Data Format: `application/json`
+Base URL: /api/v1. Authenticated requests use the HTTP-only nexus_session
+cookie. Tenant-owned routes include an organization identifier; the server
+verifies membership before reading that organization.
 
-All authenticated endpoints read the signed session JWT from the HTTP-only cookie named `bharatlabai_session`.
+## Authentication and user
 
----
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | /auth/register | Public | Create a user and session. |
+| POST | /auth/login | Public | Start a session. |
+| POST | /auth/logout | Public | Clear the session cookie. |
+| GET | /auth/me | Signed in | Get current user. |
+| POST | /auth/forgot-password | Public | Create a hashed, expiring reset request; enumeration-safe. |
+| POST | /auth/reset-password | Public | Reset with an unexpired token. |
+| POST | /auth/change-password | Signed in | Change password after verification. |
+| GET/PATCH | /users/me | Signed in | Get or update name and phone. |
 
-## 1. Authentication Endpoints
+Passwords require more than eight characters with upper-case, lower-case, and
+special characters. Reset tokens are never returned by the API.
 
-### `POST /api/v1/auth/register`
-Creates a new engineer identity and sets an HTTP-only session cookie.
-- **Body**:
-  ```json
-  {
-    "name": "Priya Sharma",
-    "email": "priya@ashoka.in",
-    "password": "Password123"
-  }
-  ```
-- **Response 201**:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "user": {
-        "id": "cm2...",
-        "email": "priya@ashoka.in",
-        "name": "Priya Sharma",
-        "createdAt": "2026-10-30T17:15:00.000Z"
-      }
-    }
-  }
-  ```
+## Organization and administration
 
-### `POST /api/v1/auth/login`
-Validates credentials, hashes with bcrypt, and sets the session cookie.
-- **Body**: `{ "email": "...", "password": "..." }`
-- **Response 200**: `{ "success": true, "data": { "user": { ... } } }`
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| POST/GET | /organizations | Signed in | Create/list accessible organizations. |
+| GET/PATCH | /organizations/:organizationId | Member/Admin | Read own context / update organization (Admin). |
+| POST | /organizations/:organizationId/switch | Member | Verify selected context. |
+| GET/POST | /organizations/:organizationId/members | Admin | List/add registered Staff or Customer members. |
+| PATCH/DELETE | /organizations/:organizationId/members/:membershipId | Admin | Change allowed role or remove a member. |
+| GET/PATCH | /organizations/:organizationId/settings | Admin | Tenant billing settings. |
 
-### `POST /api/v1/auth/logout`
-Clears the session cookie.
-- **Response 200**: `{ "success": true, "data": { "message": "Signed out successfully" } }`
+## Operational resources
 
-### `GET /api/v1/auth/me`
-Retrieves current user identity from session cookie.
-- **Response 200**: `{ "success": true, "data": { "user": { ... } } }`
+All endpoints below are nested under /organizations/:organizationId.
 
----
+| Resource | Endpoints | Access |
+| --- | --- | --- |
+| Products | GET/POST products; GET/PATCH/DELETE product; variant mutation | Admin/Staff; delete requires Admin |
+| Plans | GET/POST plans; GET/PATCH plan; activate/archive actions | Admin/Staff; archive Admin |
+| Customers | GET/POST customers; GET/PATCH customer | Admin/Staff |
+| Discounts | GET discounts; GET/POST/PATCH discount | Read Admin/Staff; write Admin |
+| Quotations | GET/POST quotations; GET/PATCH quotation; send/accept/reject/cancel | Admin/Staff |
+| Subscriptions | GET/POST subscriptions; GET/PATCH subscription; lifecycle actions | Admin/Staff |
+| Invoices | GET/POST invoices; GET/PATCH invoice; confirm/cancel/billing-run | Admin/Staff; billing run/cancel Admin |
+| Payments | GET payments; GET payment; record/initiate | Admin/Staff; Customer only for own invoice |
+| Notifications | GET notifications; mark read | Verified organization member |
+| Customer portal | GET portal; PATCH billing profile; POST cancellation request | Customer only |
 
-## 2. Organization Endpoints
+List endpoints accept page and limit (maximum 100) and support relevant
+search/filter parameters such as search, status, customerId, and planId.
 
-### `POST /api/v1/organizations`
-Creates a new tenant organization. The creator is granted the `OWNER` role.
-- **Body**:
-  ```json
-  {
-    "name": "Ashoka Research Labs",
-    "description": "Indic NLP Research"
-  }
-  ```
+## Dashboard and analytics
 
-### `GET /api/v1/organizations`
-Lists all organizations the user belongs to, including membership roles.
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | /dashboard | Signed in | Organization membership overview. |
+| GET | /dashboard/organizations/:organizationId | Admin/Staff | Tenant-scoped revenue, MRR/ARR, invoice and subscription metrics. |
+| POST/GET | /analytics/query and /analytics/history | Signed in | AI proposal / inquiry history. |
+| GET | /ai/status | Signed in | Optional AI configuration status. |
 
-### `POST /api/v1/organizations/:organizationId/switch`
-Switches active tenant context after verifying membership.
+Revenue is succeeded payments. MRR normalizes active subscriptions to a monthly
+value; ARR is MRR times 12. Natural-language analytics does not execute raw SQL.
 
----
+## Billing and payments
 
-## 3. Analytics & AI Endpoints
+The billing-run endpoint is idempotent at the invoice level through the
+unique subscriptionId and periodStart constraint. Financial calculations use
+integer paise in server code and persist PostgreSQL decimal values.
 
-### `POST /api/v1/analytics/query`
-Processes natural-language inquiries into validated query proposals.
-- **Body**:
-  ```json
-  {
-    "question": "Show all organizations and their active member count"
-  }
-  ```
-- **Response 200**:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "demo": true,
-      "question": "Show all organizations and their active member count",
-      "proposal": null,
-      "explanation": "AI is not configured. Set LLM_API_KEY to enable live model queries.",
-      "exampleResult": {
-        "columns": ["name", "role", "memberCount"],
-        "rows": [...]
-      }
-    }
-  }
-  ```
+Manual payment records are only reconciled after an operator records a payment
+reference. Gateway initiation has a provider interface but returns an explicit
+unavailable error until a genuine configured provider and webhook verifier are
+implemented; it never fabricates a successful payment.
 
-### `GET /api/v1/ai/status`
-Returns whether live LLM generation is configured.
+## Errors
 
----
-
-## 4. System & Health
-
-### `GET /api/v1/health`
-Returns system health, version, and server timestamp.
-
+Errors use a stable error object with message, code, and requestId. Cross-tenant
+resources return 404, while an authenticated member without the required role
+receives 403.

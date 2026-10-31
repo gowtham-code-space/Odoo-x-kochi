@@ -6,6 +6,15 @@ import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
 import analyticsRoutes from '../modules/analytics/analytics.routes.js';
 import aiRoutes from '../modules/ai/ai.routes.js';
 import productRoutes from '../modules/products/products.routes.js';
+import planRoutes from '../modules/plans/plans.routes.js';
+import customerRoutes from '../modules/customers/customers.routes.js';
+import quotationRoutes from '../modules/quotations/quotations.routes.js';
+import subscriptionRoutes from '../modules/subscriptions/subscriptions.routes.js';
+import discountRoutes from '../modules/discounts/discounts.routes.js';
+import invoiceRoutes from '../modules/invoices/invoices.routes.js';
+import paymentRoutes from '../modules/payments/payments.routes.js';
+import portalRoutes from '../modules/portal/portal.routes.js';
+import notificationRoutes from '../modules/notifications/notifications.routes.js';
 
 const router = Router();
 
@@ -30,6 +39,15 @@ router.use('/ai', aiRoutes);
 // Catalogue routes are nested under the organization so tenant resolution can
 // verify membership before product data is read or changed.
 router.use('/organizations/:organizationId/products', productRoutes);
+router.use('/organizations/:organizationId/plans', planRoutes);
+router.use('/organizations/:organizationId/customers', customerRoutes);
+router.use('/organizations/:organizationId/quotations', quotationRoutes);
+router.use('/organizations/:organizationId/subscriptions', subscriptionRoutes);
+router.use('/organizations/:organizationId/discounts', discountRoutes);
+router.use('/organizations/:organizationId/invoices', invoiceRoutes);
+router.use('/organizations/:organizationId/payments', paymentRoutes);
+router.use('/organizations/:organizationId/portal', portalRoutes);
+router.use('/organizations/:organizationId/notifications', notificationRoutes);
 
 export default router;
 

@@ -69,7 +69,8 @@ function validateProposal(proposal) {
 
 /**
  * Generate a query proposal from a natural-language question.
- * Returns a demo response when AI is not configured.
+ * Returns an explicit unavailable state when AI is not configured; it never
+ * fabricates analytical rows.
  */
 export async function generateAnalyticsProposal({ question, organizationId }) {
   if (!env.AI_ENABLED) {
@@ -79,15 +80,7 @@ export async function generateAnalyticsProposal({ question, organizationId }) {
       proposal: null,
       explanation:
         'AI is not configured. Set LLM_API_KEY in your .env file to enable natural-language analytics.',
-      exampleResult: {
-        columns: ['name', 'role', 'memberCount'],
-        rows: [
-          { name: 'Ashoka Research Labs', role: 'OWNER', memberCount: 3 },
-          { name: 'Mumbai AI Collective', role: 'MEMBER', memberCount: 7 },
-        ],
-        rowCount: 2,
-        note: 'This is a demo result. Configure AI to run real queries.',
-      },
+      executionDisabled: true,
     };
   }
 

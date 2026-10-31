@@ -64,12 +64,12 @@ export function AppRouter() {
               <Route path={ROUTES.SUBSCRIPTION_NEW} element={<SubscriptionsPage />} />
               <Route path={ROUTES.CUSTOMERS} element={<CustomersPage />} />
               <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+              <Route path={ROUTES.INVOICES} element={<InvoicesPage />} />
+              <Route path={ROUTES.PAYMENTS} element={<PaymentsPage />} />
             </Route>
             <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
               <Route path={ROUTES.DISCOUNTS} element={<DiscountsPage />} />
             </Route>
-            <Route path={ROUTES.INVOICES} element={<InvoicesPage />} />
-            <Route path={ROUTES.PAYMENTS} element={<PaymentsPage />} />
             <Route path={ROUTES.PORTAL} element={<CustomerPortalPage />} />
           </Route>
         </Route>

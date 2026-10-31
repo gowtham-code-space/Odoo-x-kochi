@@ -1,64 +1,64 @@
 # Development Tracker
 
-Status values: **Complete** means verified in the stated scope; **In progress** means code exists but is not fully verified; **Not started** means no complete vertical slice exists. No status below is a claim about production deployment or the brief’s performance target.
+Status is evidence-based. “Verified locally” means against the ignored local
+PostgreSQL database odoo_kochi_dev; it is not a production deployment claim.
 
-| Area | Frontend | Backend | Database | API integration | Testing | Status / evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| Foundation, tenancy, roles | Responsive shell, role-aware navigation, Admin/Staff/Customer dashboards | JWT auth, tenant resolver, role middleware | Initial migration applied locally to `odoo_kochi_dev` | Auth and organization endpoints connected; role UI is supplementary | `npm run test --prefix server`: 11/11 pass | In progress — password reset and Admin staff-management APIs remain. |
-| Product catalogue | Listing, search, create, edit, delete confirmation, and variant controls | Tenant-scoped product service, validation, and authorization | Initial migration applied locally | Catalogue endpoints are connected; product editing/deletion uses existing API endpoints | Client production build passes; live catalogue flow needs authenticated browser/API verification | In progress — do not mark complete until the local database flow is verified. |
-| Plan management | Listing, create modal, search/sort/pagination, archive interaction | Existing service/repository/routes are not registered | Initial schema table exists; later plan-rule changes are pending migration | Development-only local preview adapter | Client production build passes | Frontend preview complete; not backend-integrated. |
-| Quotations | Listing, create modal, status actions, conversion affordance | Repository/service exist; controller/routes absent | Initial schema table exists | Development-only local preview adapter | Client production build passes | Frontend preview complete; not backend-integrated. |
-| Subscriptions | Listing, create modal, plan-change and lifecycle interactions | Repository/service exist; controller/routes absent | Initial schema table exists | Development-only local preview adapter | Client production build passes | Frontend preview complete; not backend-integrated. |
-| Invoices, GST, discounts, payments, finance | Invoice, payment, discount screens and finance dashboard/reporting views | Not implemented as verified API flows | Initial schema tables exist | Development-only local preview adapter; no payment gateway claim | Client production build passes | Frontend preview complete; backend integration pending. |
-| Customers and customer portal | Customer list and isolated customer portal layout | Customer-specific access APIs pending | N/A | Development-only local preview adapter | Client production build passes | Frontend preview complete; server ownership enforcement pending. |
-| Landing page and public routes | Landing page, login, registration, forgot/reset password, unauthorized/session handling | Login/registration exist; password reset endpoints pending | N/A | Existing login/registration connected; recovery UI reports unavailable API honestly | Client production build passes | Frontend implementation complete; password-reset backend pending. |
+| Area | Frontend | Backend/API | Database | Verification | Status |
+| --- | --- | --- | --- | --- | --- |
+| Foundation, authentication, tenancy | Connected login, registration, session, organization switch | JWT cookie, bcrypt, tenant resolver, ADMIN/STAFF/CUSTOMER authorization, profile/password-reset request APIs | Both reviewed migrations applied | 14 automated tests; live register/login/logout/session test | Verified locally |
+| Product catalogue | Product and variant CRUD UI | Tenant-scoped CRUD and role checks | Persisted PostgreSQL models | Live create/variant flow and cross-tenant denial | Verified locally |
+| Plans and customers | Create/list screens backed by API | Plan availability/price validation; customer CRUD and ownership link | plans, customers, indexes and FKs | Live plan/customer creation | Verified locally |
+| Quotations and subscriptions | Create/list/lifecycle controls use API | Server-side line calculations, accepted quote conversion, transition history, lifecycle guards | Quotations, lines, subscriptions, history | Live quotation → subscription → activation workflow | Verified locally |
+| Invoices, GST, discounts, billing | Create/list/confirm screens use API | Decimal-safe paise calculations, discount rules, invoice confirmation, idempotency constraint, recurring billing run | Invoice/payment/discount/redemption/billing-run models | Live recurring invoice and payment reconciliation flow | Verified locally |
+| Payments | Manual payment recording UI; no fake gateway success | Provider boundary returns clear unavailable response until real credentials/adapter exist | Payment status/refund/provider fields | Live manual payment reconciliation; unconfigured provider not marked successful | Partially complete — gateway/webhook integration needs real provider credentials |
+| Customer portal | Customer dashboard, invoices, and cancellation request UI | Customer-profile ownership enforcement and cancellation notifications | Customer user link, notifications | Live customer portal ownership test | Verified locally |
+| Organization/admin settings | Profile, business, members and billing settings UI | Member assignment, settings upsert, audit logs | Organization settings and audit log | Live profile/settings/member persistence test | Verified locally |
+| Dashboard/reports | Live KPI/dashboard/report views | Tenant-scoped aggregation for payments, MRR, ARR, subscriptions and invoices | Existing domain tables/indexes | Frontend production build and local API flow | Verified locally; trend/churn drill-down endpoints remain future work |
+| AI analytics | Explicit unavailable state when no provider is configured | Proposal-only interface; no raw SQL execution | N/A | UI does not substitute fake business results | Intentionally limited — no read-only execution engine |
 
-## Product catalogue verification gate
+## Database and migration state
 
-The following must all pass before changing the product catalogue row to **Complete**:
+- Local target verified before applying: odoo_kochi_dev on 127.0.0.1:5432.
+- Applied migrations:
+  - 20261031071945_init_subscription_management
+  - 20261031123000_core_backoffice
+- The second migration is additive: tables, columns, enum values, indexes and
+  foreign keys only. It contains no reset, drop, truncate, or enum-value
+  replacement.
+- Local test records were intentionally created during HTTP verification. No
+  production database was accessed and no destructive database command was run.
 
-- A local PostgreSQL database has the current Prisma schema through a reviewed migration; no production URL is used.
-- An Admin can create a product and variant in organization A.
-- A Staff member can list and manage the same organization’s catalogue.
-- A Customer receives a server-side `403` for catalogue endpoints.
-- A member of organization B receives a server-side `404` when attempting to access organization A’s catalogue.
-- Product and variant records persist after a server restart and are shown by the client.
+## Latest checks — 31 Oct 2026
 
-## Latest local checks — 31 Oct 2026
+- npm run test — **14/14 passing** (tenant isolation, role authorization,
+  exact monetary arithmetic, billing intervals, discount eligibility).
+- npm run build — **passed**.
+- prisma validate — **passed**.
+- prisma migrate status — **database schema up to date**.
+- Live local HTTP verification passed for registration, organization/admin
+  membership, product/variant, plan, customer, discount, quotation,
+  subscription activation, recurring invoice, manual payment reconciliation,
+  settings/profile persistence, customer-portal isolation, cross-tenant
+  denial, and password-reset enumeration safety.
 
-- `npm run test --prefix server` passed: **11/11** tenant-isolation and role-authorization tests.
-- `npm run build --prefix client` passed.
-- `npm run generate --prefix server` passed after restoring server dependencies with `npm install`; the generated `server/package-lock.json` now records the server dependency tree.
-- `npm run migrate --prefix server -- --help` passed, confirming the local Prisma CLI is restored.
-- PostgreSQL 17 is running locally and the ignored `server/.env` connects to local `odoo_kochi_dev` at `127.0.0.1:5432`.
-- Read-only introspection confirmed the local database was empty. Reviewed migration `20261031071945_init_subscription_management` was applied successfully; `prisma migrate status` reports the database schema is up to date for that migration.
-- The current Prisma schema has subsequent un-applied workflow changes. They are intentionally not migrated during the frontend-only implementation pass.
-- Frontend production build passed after the landing page, application shell, role-based dashboards, catalogue improvements, and preview modules were added.
-- Environment loading was repaired by adding `dotenv` and loading the absolute `server/.env` path inside `server/src/config/env.js` before required-variable validation. `DATABASE_URL` is now available to the Node process without exposing it.
-- The ignored local `.env` has `DATABASE_URL` but does not yet define `JWT_SECRET`. Normal `npm run dev --prefix server` therefore stops safely with the required-variable error; a process-only test secret was used solely to verify startup and HTTP authentication.
-- With that temporary test secret, the Express server connected to local PostgreSQL and `/api/v1/health` returned 200. A live local test verified registration, duplicate-email rejection (409), organization provisioning with an `ADMIN` membership, logout, login, and restored `/auth/me` session. Password-policy rejection returned 422.
-- A read-only information-schema query confirmed all 15 tables in the reviewed initial migration are present. No reset, drop, or destructive database command was run.
+## Local environment requirements
 
-## Safe local migration procedure
+server/.env is ignored and must include non-empty local values for:
 
-`server/.env.example` contains only a placeholder. Create a local, ignored `server/.env` file and point it to a database reserved for development, for example:
+    DATABASE_URL="postgresql://<local-user>:<local-password>@127.0.0.1:5432/odoo_kochi_dev?schema=public"
+    JWT_SECRET="<long-random-secret>"
 
-```dotenv
-DATABASE_URL="postgresql://brightloop_dev_user:local-password@localhost:5432/brightloop_dev?schema=public"
-```
+Never commit this file or use a production connection URL. Take a backup before
+future migrations; if Prisma ever requests a reset, stop and review the drift
+instead of using migrate reset.
 
-Never copy a production connection string into this file. Confirm the database name and host identify your local development instance before proceeding.
+## External / intentionally deferred work
 
-Before migration commands, ensure the local Prisma CLI is available. In this checkout it has been restored and `npm run migrate -- --help` succeeds.
-
-1. If the local database contains data, create and verify a backup first. For PostgreSQL, a typical command is `pg_dump --format=custom --file=brightloop_dev_before_catalogue.dump --dbname="$DATABASE_URL"`. Keep the dump outside version control.
-2. Review the target URL with `npm run migrate -- --help`; do not accept any Prisma reset prompt.
-3. This repository currently has no `prisma/migrations` history. For an empty local database, create the initial migration with `npm run migrate -- --name init_subscription_management` from `server/`, then inspect the generated SQL before committing it.
-4. For a pre-existing local database, stop if Prisma reports schema drift or requests a reset. Do not use `migrate reset`. Establish a reviewed baseline migration or have a database owner review a generated diff before applying any change.
-5. After a successful migration, run `npm run generate`, `npm run test`, and the Product catalogue verification gate above. Record the actual results in this tracker.
-
-The application has a configured local PostgreSQL database and the initial migration is applied. Product flow and role verification still need authenticated browser/API integration tests before the catalogue can be marked fully complete.
-
-## Frontend implementation note
-
-Plans, quotations, subscriptions, invoices, payments, discounts, customers, reports, and portal pages use a clearly labelled local development-preview adapter until their APIs are implemented. Their UI interactions update browser-only preview state and notify the user that no server record was saved.
+- A real gateway adapter, provider credentials, signature verification, and
+  webhook endpoint are required before online payment initiation or refunds.
+- Password-reset email delivery needs an approved email provider. The server
+  stores a hashed, expiring reset token and always returns an enumeration-safe
+  response; it never exposes reset tokens.
+- Automated scheduled execution needs deployment-specific scheduling (the
+  authenticated, idempotent billing-run endpoint and run records are present).
+- Performance target under thousands of subscriptions has not been measured.

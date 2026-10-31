@@ -39,3 +39,15 @@ export async function createUser({ name, email, passwordHash }) {
   });
 }
 
+export function findUserForPasswordReset(resetToken) {
+  return prisma.user.findFirst({ where: { resetToken, resetExpiry: { gt: new Date() } } });
+}
+
+export function setPasswordResetToken(id, resetToken, resetExpiry) {
+  return prisma.user.update({ where: { id }, data: { resetToken, resetExpiry } });
+}
+
+export function clearPasswordResetToken(id, passwordHash) {
+  return prisma.user.update({ where: { id }, data: { passwordHash, resetToken: null, resetExpiry: null } });
+}
+

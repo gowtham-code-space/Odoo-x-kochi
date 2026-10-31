@@ -79,10 +79,10 @@ export function NLAnalyticsPage() {
           <Icon icon="lucide:info" className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           <div className="text-xs leading-relaxed text-muted-foreground">
             <span className="font-medium text-foreground block mb-0.5">
-              Graceful Degradation Active: LLM Credentials Not Detected
+              AI integration unavailable: LLM credentials not detected
             </span>
             The application operates reliably without required LLM API keys. Queries will
-            produce bounded simulated analytical context. To connect live Gemini /
+            return no analytical rows. To connect live Gemini /
             OpenAI models, configure <code className="font-mono text-foreground">LLM_API_KEY</code> in <code className="font-mono text-foreground">server/.env</code>.
           </div>
         </div>
@@ -231,20 +231,20 @@ export function NLAnalyticsPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                    Projected Analytical Set ({result.exampleResult?.rowCount || 2} records)
+                    Analytical result ({result.exampleResult?.rowCount ?? 0} records)
                   </span>
                   {result.demo && (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-muted text-muted-foreground border border-border">
-                      Demo Set
+                      AI unavailable
                     </span>
                   )}
                 </div>
 
-                <div className="overflow-x-auto rounded-md border border-border">
+                {!result.exampleResult ? <p className="rounded-md border border-border bg-input p-4 text-sm text-muted-foreground">No analytical rows were returned. Natural-language execution requires a configured provider and a reviewed read-only query executor.</p> : <div className="overflow-x-auto rounded-md border border-border">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="bg-surface-raised font-mono text-xs uppercase tracking-widest text-muted-foreground border-b border-border">
-                        {(result.exampleResult?.columns || ['name', 'role', 'memberCount']).map(
+                        {result.exampleResult.columns.map(
                           (col) => (
                             <th key={col} className="px-4 py-2.5 font-medium">
                               {col}
@@ -254,12 +254,7 @@ export function NLAnalyticsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border bg-surface">
-                      {(
-                        result.exampleResult?.rows || [
-                          { name: 'Ashoka Research Labs', role: 'OWNER', memberCount: 3 },
-                          { name: 'Mumbai AI Collective', role: 'MEMBER', memberCount: 7 },
-                        ]
-                      ).map((row, idx) => (
+                      {result.exampleResult.rows.map((row, idx) => (
                         <tr key={idx} className="hover:bg-surface-raised text-xs font-mono">
                           <td className="px-4 py-3 font-medium text-foreground">{row.name}</td>
                           <td className="px-4 py-3 text-muted-foreground">
@@ -274,7 +269,7 @@ export function NLAnalyticsPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </div>}
               </div>
             </div>
           )}

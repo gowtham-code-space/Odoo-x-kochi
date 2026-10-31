@@ -6,7 +6,9 @@ const globalForPrisma = globalThis;
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: env.isDev ? ['query', 'warn', 'error'] : ['warn', 'error'],
+    // SQL query logs can include customer data and must only be enabled
+    // deliberately for local troubleshooting.
+    log: process.env.PRISMA_QUERY_LOG === 'true' ? ['query', 'warn', 'error'] : ['warn', 'error'],
   });
 
 if (env.isDev) {

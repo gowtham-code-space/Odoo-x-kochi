@@ -1,30 +1,88 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { PageHeader } from '../../components/layout/PageHeader.jsx';
 import { Card } from '../../components/layout/Card.jsx';
-import { Button } from '../../components/common/Button.jsx';
 import { KpiCard } from '../../components/common/KpiCard.jsx';
-import { DemoNotice } from '../../components/common/DemoNotice.jsx';
+import { EmptyState } from '../../components/common/EmptyState.jsx';
+import { ErrorState } from '../../components/common/ErrorState.jsx';
+import { Skeleton } from '../../components/common/Skeleton.jsx';
 import { Badge } from '../../components/common/Badge.jsx';
-import { useRole } from '../../hooks/useRole.js';
 import { useAuth } from '../../hooks/useAuth.js';
-import { DASHBOARD_DEMO, DEMO_DATA } from '../../data/demoData.js';
-import { ROUTES } from '../../constants/routes.js';
+import { useOrganization } from '../../hooks/useOrganization.js';
+import { useRole } from '../../hooks/useRole.js';
+import { getDashboardData } from '../../services/dashboard.service.js';
+import { getPortalData } from '../../services/portal.service.js';
 import { formatIndianCurrency } from '../../utils/format.js';
 
-function AdminDashboard() {
-  const navigate = useNavigate(); const data = DASHBOARD_DEMO.admin;
+const badge = (status) => ({ ACTIVE: 'completed', IN_PROGRESS: 'completed', PAUSED: 'queued', CLOSED: 'failed', PAID: 'completed', PARTIAL: 'warning' }[status] || 'neutral');
+
+function LoadingDashboard() {
+  return <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((key) => <div key={key} className="rounded-xl border border-border bg-surface p-5"><Skeleton height="16px" width="55%" /><Skeleton className="mt-3" height="36px" width="70%" /></div>)}</div>;
+}
+
+function OperationsDashboard({ data }) {
+  const metrics = data.metrics;
   return <>
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><KpiCard label="Total revenue" value={formatIndianCurrency(data.revenue)} detail="Sample current financial year" icon="lucide:indian-rupee" /><KpiCard label="Monthly recurring revenue" value={formatIndianCurrency(data.mrr)} detail="Sample active subscriptions" icon="lucide:repeat-2" tone="teal" /><KpiCard label="Annual recurring revenue" value={formatIndianCurrency(data.arr)} detail="Annualized sample value" icon="lucide:trending-up" tone="success" /><KpiCard label="Overdue invoices" value={data.overdue} detail="Sample collection follow-up" icon="lucide:circle-alert" tone="warning" /></div>
-    <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_1fr]"><Card title="Revenue trend" subtitle="Sample monthly collections"><div className="flex h-60 items-end gap-4">{[48,62,54,71,68,86].map((height, index) => <div key={height} className="flex flex-1 flex-col items-center gap-2"><div style={{ height: `${height}%` }} className="w-full rounded-sm bg-primary" /><span className="font-mono text-xs text-muted-foreground">M{index + 1}</span></div>)}</div></Card><Card title="Quick actions" subtitle="Start the next operational task"><div className="space-y-3"><Button className="w-full justify-start" onClick={() => navigate(ROUTES.PRODUCTS)}><Icon icon="lucide:package-plus" />Add product</Button><Button className="w-full justify-start" variant="secondary" onClick={() => navigate(ROUTES.QUOTATION_NEW)}><Icon icon="lucide:file-plus-2" />Create quotation</Button><Button className="w-full justify-start" variant="secondary" onClick={() => navigate(ROUTES.INVOICES)}><Icon icon="lucide:receipt" />Review invoices</Button></div></Card></div>
-    <div className="mt-6 grid gap-6 lg:grid-cols-2"><Card title="Recent subscriptions" subtitle="Sample subscription activity"><div className="space-y-3">{DEMO_DATA.subscriptions.slice(0, 3).map((row) => <div key={row.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="text-sm font-medium">{row.customer}</p><p className="font-mono text-xs text-muted-foreground">{row.id} · {row.plan}</p></div><Badge variant={row.status === 'Active' ? 'completed' : 'queued'}>{row.status}</Badge></div>)}</div></Card><Card title="Recent transactions" subtitle="Sample payment activity"><div className="space-y-3">{DEMO_DATA.payments.map((row) => <div key={row.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="text-sm font-medium">{row.customer}</p><p className="font-mono text-xs text-muted-foreground">{row.method} · {row.id}</p></div><span className="font-mono text-sm tabular-nums">{formatIndianCurrency(row.amount)}</span></div>)}</div></Card></div>
+    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <KpiCard label="Collected revenue" value={formatIndianCurrency(metrics.totalRevenue)} detail="Succeeded payments" icon="lucide:indian-rupee" />
+      <KpiCard label="Monthly recurring revenue" value={formatIndianCurrency(metrics.mrr)} detail="Active subscriptions, normalized" icon="lucide:repeat-2" tone="teal" />
+      <KpiCard label="Annual recurring revenue" value={formatIndianCurrency(metrics.arr)} detail="MRR × 12" icon="lucide:trending-up" tone="success" />
+      <KpiCard label="Overdue invoices" value={metrics.overdueInvoices} detail="Requires collection follow-up" icon="lucide:circle-alert" tone="warning" />
+    </div>
+    <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <Card title="Recent subscriptions" subtitle="Persisted records in this organization">
+        {data.recentSubscriptions.length === 0 ? <p className="text-sm text-muted-foreground">No subscriptions yet.</p> : <div className="space-y-3">{data.recentSubscriptions.map((item) => <div key={item.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="text-sm font-medium">{item.customerName}</p><p className="font-mono text-xs text-muted-foreground">{item.number} · {item.plan.name}</p></div><Badge variant={badge(item.status)}>{item.status}</Badge></div>)}</div>}
+      </Card>
+      <Card title="Recent payments" subtitle="Succeeded payment records">
+        {data.recentPayments.length === 0 ? <p className="text-sm text-muted-foreground">No payments recorded yet.</p> : <div className="space-y-3">{data.recentPayments.map((item) => <div key={item.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="text-sm font-medium">{item.invoice?.customerName || 'Customer'}</p><p className="font-mono text-xs text-muted-foreground">{item.invoice?.number} · {item.method}</p></div><span className="font-mono text-sm tabular-nums">{formatIndianCurrency(item.amount)}</span></div>)}</div>}
+      </Card>
+    </div>
   </>;
 }
-function StaffDashboard() { const navigate = useNavigate(); const data = DASHBOARD_DEMO.staff; return <><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><KpiCard label="Assigned customers" value={data.assigned} icon="lucide:users" /><KpiCard label="Active subscriptions" value={data.active} tone="success" icon="lucide:repeat-2" /><KpiCard label="Open quotations" value={data.quotations} tone="teal" icon="lucide:file-text" /><KpiCard label="Invoices to follow up" value={data.overdue} tone="warning" icon="lucide:circle-alert" /></div><div className="mt-6 grid gap-6 lg:grid-cols-2"><Card title="Operational queue" subtitle="Development-preview work items"><div className="space-y-3">{['Review quotation Q/2026/0042', 'Follow up invoice INV/2026/0086', 'Confirm subscription renewal'].map((item) => <button type="button" key={item} onClick={() => navigate(ROUTES.SUBSCRIPTIONS)} className="flex w-full items-center justify-between rounded-md border border-border p-3 text-left text-sm hover:bg-surface-raised"><span>{item}</span><Icon icon="lucide:arrow-right" className="h-4 w-4 text-primary" /></button>)}</div></Card><Card title="Allowed areas" subtitle="Role-scoped interface"><ul className="space-y-3 text-sm text-muted-foreground"><li className="flex gap-2"><Icon icon="lucide:check" className="h-4 w-4 text-success" />Manage quotations and subscriptions</li><li className="flex gap-2"><Icon icon="lucide:check" className="h-4 w-4 text-success" />Track product, plan, and invoice work</li><li className="flex gap-2"><Icon icon="lucide:lock" className="h-4 w-4 text-muted-foreground" />Admin-only discount and member controls stay unavailable</li></ul></Card></div></>; }
-function CustomerDashboard() { const data = DASHBOARD_DEMO.customer; const navigate = useNavigate(); return <><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><KpiCard label="Current plan" value="Growth" icon="lucide:layers" /><KpiCard label="Renewal date" value="01 Nov" tone="teal" icon="lucide:calendar-clock" /><KpiCard label="Billing balance" value={formatIndianCurrency(data.due)} tone="success" icon="lucide:circle-check" /><KpiCard label="Recent invoices" value={data.invoices} icon="lucide:receipt" /></div><div className="mt-6 grid gap-6 lg:grid-cols-2"><Card title="Your subscription" subtitle="Development preview"><div className="space-y-3 text-sm"><p className="font-medium">{data.plan}</p><p className="text-muted-foreground">Next renewal: {data.renewal}</p><Badge variant="completed">Active</Badge></div></Card><Card title="Account shortcuts" subtitle="Only your own account data will be shown after API connection."><div className="space-y-3"><Button className="w-full justify-start" onClick={() => navigate(ROUTES.PORTAL)}><Icon icon="lucide:user-round" />Open customer portal</Button><Button variant="secondary" className="w-full justify-start" onClick={() => navigate(ROUTES.INVOICES)}><Icon icon="lucide:receipt" />View my invoices</Button></div></Card></div></>; }
+
+function CustomerDashboard({ data }) {
+  const current = data.subscriptions.find((item) => ['ACTIVE', 'IN_PROGRESS'].includes(item.status));
+  return <>
+    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <KpiCard label="Current plan" value={current?.plan?.name || 'No active plan'} icon="lucide:layers" />
+      <KpiCard label="Next renewal" value={data.metrics.nextRenewal ? new Date(data.metrics.nextRenewal).toLocaleDateString() : '—'} tone="teal" icon="lucide:calendar-clock" />
+      <KpiCard label="Balance due" value={formatIndianCurrency(data.metrics.balanceDue)} tone="warning" icon="lucide:wallet-cards" />
+      <KpiCard label="Invoices" value={data.metrics.invoiceCount} icon="lucide:receipt" />
+    </div>
+    <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <Card title="My subscriptions" subtitle="Only subscriptions associated with your customer profile">
+        {data.subscriptions.length === 0 ? <p className="text-sm text-muted-foreground">No subscriptions are assigned to your profile.</p> : <div className="space-y-3">{data.subscriptions.slice(0, 5).map((item) => <div key={item.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="text-sm font-medium">{item.plan.name}</p><p className="font-mono text-xs text-muted-foreground">{item.number}</p></div><Badge variant={badge(item.status)}>{item.status}</Badge></div>)}</div>}
+      </Card>
+      <Card title="My invoices" subtitle="Invoice records scoped to your profile">
+        {data.invoices.length === 0 ? <p className="text-sm text-muted-foreground">No invoices yet.</p> : <div className="space-y-3">{data.invoices.slice(0, 5).map((item) => <div key={item.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="font-mono text-xs text-muted-foreground">{item.number}</p><p className="text-sm">{new Date(item.issueDate).toLocaleDateString()}</p></div><span className="font-mono text-sm">{formatIndianCurrency(item.amountDue)}</span></div>)}</div>}
+      </Card>
+    </div>
+  </>;
+}
 
 export function DashboardPage() {
-  const { user } = useAuth(); const role = useRole();
-  return <div><PageHeader eyebrow={`${role.charAt(0)}${role.slice(1).toLowerCase()} workspace`} title={`Welcome, ${user?.name?.split(' ')[0] || 'there'}`} subtitle="A role-aware view of subscription operations. Dashboard figures are clearly marked development-preview data until reporting APIs are connected." /><DemoNotice />{role === 'CUSTOMER' ? <CustomerDashboard /> : role === 'STAFF' ? <StaffDashboard /> : <AdminDashboard />}</div>;
+  const { user } = useAuth();
+  const { activeOrg } = useOrganization();
+  const role = useRole();
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    if (!activeOrg?.id) { setData(null); setLoading(false); return; }
+    setLoading(true);
+    try {
+      const response = role === 'CUSTOMER' ? await getPortalData(activeOrg.id) : await getDashboardData(activeOrg.id);
+      setData(response); setError(null);
+    } catch (requestError) {
+      setError(requestError.response?.data?.error?.message || 'Could not load live dashboard data.');
+    } finally { setLoading(false); }
+  }, [activeOrg?.id, role]);
+  useEffect(() => { load(); }, [load]);
+  return <div>
+    <PageHeader eyebrow={role.toLowerCase() + ' workspace'} title={'Welcome, ' + (user?.name?.split(' ')[0] || 'there')} subtitle="Live operational figures from the active organization." />
+    {!activeOrg && <EmptyState icon="lucide:building-2" title="Choose an organization" description="Dashboard figures become available after selecting an organization." />}
+    {activeOrg && loading && <LoadingDashboard />}
+    {activeOrg && !loading && error && <ErrorState message={error} onRetry={load} />}
+    {activeOrg && !loading && !error && data && (role === 'CUSTOMER' ? <CustomerDashboard data={data} /> : <OperationsDashboard data={data} />)}
+  </div>;
 }

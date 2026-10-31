@@ -21,3 +21,28 @@ export async function switchOrganization(id) {
   return res.data.data.organization;
 }
 
+export async function updateOrganization(id, data) {
+  const res = await api.patch(API_ENDPOINTS.ORGANIZATION(id), data);
+  return res.data.data.organization;
+}
+
+export async function getMembers(id) {
+  const res = await api.get(`${API_ENDPOINTS.ORGANIZATION(id)}/members`);
+  return res.data.data.memberships;
+}
+
+export async function addMember(id, data) {
+  const res = await api.post(`${API_ENDPOINTS.ORGANIZATION(id)}/members`, data);
+  return res.data.data.membership;
+}
+
+export async function getOrganizationSettings(id) {
+  const res = await api.get(`${API_ENDPOINTS.ORGANIZATION(id)}/settings`);
+  return res.data.data.settings;
+}
+
+export async function updateOrganizationSettings(id, data) {
+  const res = await api.patch(`${API_ENDPOINTS.ORGANIZATION(id)}/settings`, data);
+  return res.data.data.settings;
+}
+

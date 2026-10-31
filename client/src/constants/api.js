@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
 
   // Dashboard
   DASHBOARD: '/dashboard',
+  ORGANIZATION_DASHBOARD: (organizationId) => `/dashboard/organizations/${organizationId}`,
 
   // Analytics
   ANALYTICS_QUERY: '/analytics/query',
