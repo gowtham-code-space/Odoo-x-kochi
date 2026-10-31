@@ -36,6 +36,12 @@ PostgreSQL database odoo_kochi_dev; it is not a production deployment claim.
 - npm run build — **passed**.
 - prisma validate — **passed**.
 - prisma migrate status — **database schema up to date**.
+- prisma generate — **not rerun successfully on 31 Oct 2026** because Windows
+  holds `server/node_modules/.prisma/client/query_engine-windows.dll.node`
+  open (`EPERM` on rename). The checked-in schema was unchanged and the
+  already-generated client passed the server test suite; close the locking
+  process or reboot before the next schema change, then rerun `npm run generate`
+  from `server/`.
 - Live local HTTP verification passed for registration, organization/admin
   membership, product/variant, plan, customer, discount, quotation,
   subscription activation, recurring invoice, manual payment reconciliation,
