@@ -27,9 +27,10 @@ The following must all pass before changing the product catalogue row to **Compl
 
 - `npm run test --prefix server` passed: **11/11** tenant-isolation and role-authorization tests.
 - `npm run build --prefix client` passed.
-- Prisma schema validation and Prisma Client generation previously passed with a placeholder local `DATABASE_URL`; this does not exercise a database.
-- No live PostgreSQL verification was run: `server/.env` is absent in this worktree.
-- `npm run migrate --prefix server -- --help` currently fails before contacting a database because the local Prisma executable shim is missing from `server/node_modules/.bin` after an incomplete dependency installation. Restore dependencies with `npm install` in `server/` (or `npm ci` when a lockfile is added) before attempting migration commands.
+- `npm run generate --prefix server` passed after restoring server dependencies with `npm install`; the generated `server/package-lock.json` now records the server dependency tree.
+- `npm run migrate --prefix server -- --help` passed, confirming the local Prisma CLI is restored. No migration was applied.
+- `prisma validate` passed with a temporary placeholder `DATABASE_URL`; this validates the schema only and does not exercise a database.
+- No live PostgreSQL verification was run: `server/.env` and a process-level `DATABASE_URL` are absent. No PostgreSQL service, CLI, installation, or listener on port 5432 was found on this machine.
 
 ## Safe local migration procedure
 
@@ -41,7 +42,7 @@ DATABASE_URL="postgresql://brightloop_dev_user:local-password@localhost:5432/bri
 
 Never copy a production connection string into this file. Confirm the database name and host identify your local development instance before proceeding.
 
-Before migration commands, ensure the local Prisma CLI is available. In the current checkout, repair the incomplete development dependency install first with `npm install` from `server/`; this changes local dependencies only, not database data. Do not proceed until `npm run migrate -- --help` displays Prisma help successfully.
+Before migration commands, ensure the local Prisma CLI is available. In this checkout it has been restored and `npm run migrate -- --help` succeeds.
 
 1. If the local database contains data, create and verify a backup first. For PostgreSQL, a typical command is `pg_dump --format=custom --file=brightloop_dev_before_catalogue.dump --dbname="$DATABASE_URL"`. Keep the dump outside version control.
 2. Review the target URL with `npm run migrate -- --help`; do not accept any Prisma reset prompt.
