@@ -4,6 +4,15 @@
  * Optional AI vars degrade gracefully.
  */
 
+import dotenv from 'dotenv';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Load server/.env before validating anything. This explicit absolute path keeps
+// npm --prefix, direct node, and watch-mode startup behavior consistent.
+const configDirectory = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: resolve(configDirectory, '../../.env') });
+
 const REQUIRED = ['DATABASE_URL', 'JWT_SECRET'];
 
 for (const key of REQUIRED) {

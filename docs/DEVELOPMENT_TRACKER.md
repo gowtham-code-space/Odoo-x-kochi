@@ -34,6 +34,10 @@ The following must all pass before changing the product catalogue row to **Compl
 - Read-only introspection confirmed the local database was empty. Reviewed migration `20261031071945_init_subscription_management` was applied successfully; `prisma migrate status` reports the database schema is up to date for that migration.
 - The current Prisma schema has subsequent un-applied workflow changes. They are intentionally not migrated during the frontend-only implementation pass.
 - Frontend production build passed after the landing page, application shell, role-based dashboards, catalogue improvements, and preview modules were added.
+- Environment loading was repaired by adding `dotenv` and loading the absolute `server/.env` path inside `server/src/config/env.js` before required-variable validation. `DATABASE_URL` is now available to the Node process without exposing it.
+- The ignored local `.env` has `DATABASE_URL` but does not yet define `JWT_SECRET`. Normal `npm run dev --prefix server` therefore stops safely with the required-variable error; a process-only test secret was used solely to verify startup and HTTP authentication.
+- With that temporary test secret, the Express server connected to local PostgreSQL and `/api/v1/health` returned 200. A live local test verified registration, duplicate-email rejection (409), organization provisioning with an `ADMIN` membership, logout, login, and restored `/auth/me` session. Password-policy rejection returned 422.
+- A read-only information-schema query confirmed all 15 tables in the reviewed initial migration are present. No reset, drop, or destructive database command was run.
 
 ## Safe local migration procedure
 
