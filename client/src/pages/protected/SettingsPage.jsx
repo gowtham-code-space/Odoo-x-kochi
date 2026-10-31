@@ -1,123 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Icon } from '@iconify/react';
 import { PageHeader } from '../../components/layout/PageHeader.jsx';
 import { Card } from '../../components/layout/Card.jsx';
+import { Button } from '../../components/common/Button.jsx';
 import { Badge } from '../../components/common/Badge.jsx';
-import { InnerTile } from '../../components/layout/InnerTile.jsx';
+import { Input } from '../../components/forms/Input.jsx';
+import { DemoNotice } from '../../components/common/DemoNotice.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useOrganization } from '../../hooks/useOrganization.js';
-import { ROUTES } from '../../constants/routes.js';
-import { formatIST } from '../../utils/date.js';
-import { Icon } from '@iconify/react';
+import { useRole, isAdmin } from '../../hooks/useRole.js';
+import { useToast } from '../../hooks/useToast.js';
+
+const members = [{ name: 'Priya Sharma', email: 'priya@brightloop.in', role: 'ADMIN' }, { name: 'Arjun Menon', email: 'arjun@brightloop.in', role: 'STAFF' }, { name: 'Ananya Rao', email: 'billing@ananyastores.in', role: 'CUSTOMER' }];
 
 export function SettingsPage() {
-  const { user } = useAuth();
-  const { activeOrg } = useOrganization();
-
-  return (
-    <div className="max-w-4xl">
-      <PageHeader
-        eyebrow="System Configuration"
-        title="Settings & Governance"
-        subtitle="Account specifications, compliance declarations, and security policies."
-        breadcrumbs={[
-          { label: 'Dashboard', to: ROUTES.DASHBOARD },
-          { label: 'Settings' },
-        ]}
-      />
-
-      <div className="space-y-6">
-        {/* User Identity Card */}
-        <Card title="User Identity Profile" subtitle="Authenticated identity details">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InnerTile>
-              <span className="text-xs text-muted-foreground uppercase font-mono block mb-1">
-                Display Name
-              </span>
-              <p className="font-medium text-foreground">{user?.name || '-'}</p>
-            </InnerTile>
-
-            <InnerTile>
-              <span className="text-xs text-muted-foreground uppercase font-mono block mb-1">
-                Corporate Email
-              </span>
-              <p className="font-mono text-foreground text-sm">{user?.email || '-'}</p>
-            </InnerTile>
-
-            <InnerTile>
-              <span className="text-xs text-muted-foreground uppercase font-mono block mb-1">
-                Active Tenant Context
-              </span>
-              <p className="font-medium text-foreground">
-                {activeOrg?.name || 'No tenant selected'}
-              </p>
-              {activeOrg && (
-                <span className="text-[11px] font-mono text-muted-foreground">
-                  ID: {activeOrg.id}
-                </span>
-              )}
-            </InnerTile>
-
-            <InnerTile>
-              <span className="text-xs text-muted-foreground uppercase font-mono block mb-1">
-                Account Created
-              </span>
-              <p className="font-mono text-foreground text-xs">
-                {user?.createdAt ? formatIST(user.createdAt) : '-'}
-              </p>
-            </InnerTile>
-          </div>
-        </Card>
-
-        {/* Security & Token Architecture */}
-        <Card
-          title="Security & Session Policy"
-          subtitle="Enterprise hardened cookie parameters"
-        >
-          <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
-            <div className="p-3 rounded-md bg-input border border-border flex items-start gap-3">
-              <Icon icon="lucide:shield-check" className="w-5 h-5 text-success shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-foreground text-sm mb-0.5">
-                  HTTP-Only Browser Session
-                </p>
-                <p>
-                  Authentication uses tamper-resistant, signed JWTs stored exclusively in HTTP-only, SameSite=Lax browser cookies. Tokens are inaccessible to JavaScript, protecting against XSS attacks.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-md bg-input border border-border flex items-start gap-3">
-              <Icon icon="lucide:lock" className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-foreground text-sm mb-0.5">
-                  Tenant Boundary Enforcement
-                </p>
-                <p>
-                  No client header is trusted without independent server-side database verification against the <code className="font-mono text-foreground">memberships</code> relation table.
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Compliance and Data Residency */}
-        <Card
-          title="Compliance & Data Residency"
-          subtitle="Verification per Digital Personal Data Protection (DPDP) Act"
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Badge variant="compliance">DPDP Aligned</Badge>
-              <Badge variant="compliance">ap-south-1 Sovereign</Badge>
-              <Badge variant="compliance">Zero Data Retention (ZDR)</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              All evaluations, database analytics queries, and telemetry remain strictly stored within Indian borders (AWS ap-south-1 Mumbai region). Audit trails are immutable and retained for 180 days per national data regulatory mandates.
-            </p>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
+  const { user } = useAuth(); const { activeOrg } = useOrganization(); const role = useRole(); const { addToast } = useToast(); const [name, setName] = useState(user?.name || ''); const [tab, setTab] = useState('profile');
+  const previewSave = () => addToast({ type: 'info', title: 'Preview only', message: 'This settings change is not saved until the matching API is available.' });
+  const tabs = [{ id: 'profile', label: 'Profile', icon: 'lucide:user-round' }, ...(isAdmin(role) ? [{ id: 'organization', label: 'Organization', icon: 'lucide:building-2' }, { id: 'members', label: 'Members', icon: 'lucide:users' }] : []), { id: 'notifications', label: 'Notifications', icon: 'lucide:bell' }, { id: 'security', label: 'Security', icon: 'lucide:shield-check' }];
+  return <div className="max-w-5xl"><PageHeader eyebrow="Settings" title="Preferences and administration" subtitle="Personal preferences are available to every role. Organization and member controls are shown only to Admin users." /><DemoNotice>Settings controls are interactive local previews until their corresponding server APIs are available.</DemoNotice><div className="grid gap-6 md:grid-cols-[190px_1fr]"><nav className="rounded-xl border border-border bg-surface p-2">{tabs.map((item) => <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`mb-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm ${tab === item.id ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-surface-raised hover:text-foreground'}`}><Icon icon={item.icon} className="h-4 w-4" />{item.label}</button>)}</nav><div className="space-y-6">{tab === 'profile' && <Card title="Personal profile" subtitle="Your signed-in identity"><div className="grid gap-4 sm:grid-cols-2"><Input label="Display name" value={name} onChange={(event) => setName(event.target.value)} /><Input label="Email address" value={user?.email || ''} disabled /></div><div className="mt-5"><Button onClick={previewSave}>Save profile</Button></div></Card>}{tab === 'organization' && <Card title="Organization profile" subtitle="Active workspace details"><div className="grid gap-4 sm:grid-cols-2"><Input label="Organization name" value={activeOrg?.name || ''} disabled={!activeOrg} /><Input label="GSTIN" placeholder="Add GSTIN" /><Input label="City" placeholder="Mumbai" /><Input label="Billing email" type="email" placeholder="accounts@example.in" /></div><div className="mt-5"><Button onClick={previewSave}>Save organization</Button></div></Card>}{tab === 'members' && <Card title="Organization members" subtitle="Role assignments are administered server-side."><div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left text-sm"><thead className="bg-surface-raised font-mono text-xs uppercase tracking-widest text-muted-foreground"><tr><th className="px-3 py-2.5">Member</th><th className="px-3 py-2.5">Role</th><th className="px-3 py-2.5 text-right">Action</th></tr></thead><tbody>{members.map((member) => <tr key={member.email} className="border-t border-border"><td className="px-3 py-3"><p className="font-medium">{member.name}</p><p className="text-xs text-muted-foreground">{member.email}</p></td><td className="px-3 py-3"><Badge variant={member.role === 'ADMIN' ? 'running' : member.role === 'STAFF' ? 'queued' : 'neutral'}>{member.role}</Badge></td><td className="px-3 py-3 text-right"><Button size="sm" variant="ghost" onClick={previewSave}>Manage</Button></td></tr>)}</tbody></table></div><div className="mt-5"><Button onClick={previewSave}><Icon icon="lucide:user-plus" />Invite staff member</Button></div></Card>}{tab === 'notifications' && <Card title="Notification preferences" subtitle="Choose which billing activity you want to review."><div className="space-y-4">{['Invoice due reminders', 'Payment received updates', 'Subscription renewal reminders', 'Monthly finance summary'].map((label) => <label key={label} className="flex items-center justify-between rounded-md border border-border p-3"><span className="text-sm">{label}</span><input type="checkbox" defaultChecked className="h-5 w-5 rounded-sm accent-primary" /></label>)}</div><div className="mt-5"><Button onClick={previewSave}>Save preferences</Button></div></Card>}{tab === 'security' && <Card title="Security and session" subtitle="Authentication and data permissions are enforced by the server."><div className="space-y-3 text-sm"><div className="flex gap-3 rounded-md border border-border p-3"><Icon icon="lucide:key-round" className="h-5 w-5 text-primary" /><div><p className="font-medium">Password requirements</p><p className="text-muted-foreground">More than 8 characters with uppercase, lowercase, and a special character.</p></div></div><div className="flex gap-3 rounded-md border border-border p-3"><Icon icon="lucide:shield-check" className="h-5 w-5 text-success" /><div><p className="font-medium">Role-bound access</p><p className="text-muted-foreground">The server verifies organization membership and role before protected operations.</p></div></div></div><div className="mt-5"><Button variant="secondary" onClick={previewSave}>Request password reset</Button></div></Card>}</div></div></div>;
 }
-

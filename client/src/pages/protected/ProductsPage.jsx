@@ -11,7 +11,7 @@ import { Textarea } from '../../components/forms/Textarea.jsx';
 import { Modal } from '../../components/feedback/Modal.jsx';
 import { useOrganization } from '../../hooks/useOrganization.js';
 import { useToast } from '../../hooks/useToast.js';
-import { createProduct, createProductVariant, getProducts } from '../../services/product.service.js';
+import { createProduct, createProductVariant, getProducts, updateProduct, deleteProduct, updateProductVariant, deleteProductVariant } from '../../services/product.service.js';
 import { formatIndianCurrency } from '../../utils/format.js';
 
 const initialProduct = { name: '', productType: '', salesPrice: '', costPrice: '', description: '' };
@@ -38,6 +38,10 @@ export function ProductsPage() {
   const [productForm, setProductForm] = useState(initialProduct);
   const [variantForm, setVariantForm] = useState(initialVariant);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingVariant, setEditingVariant] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadProducts = useCallback(async () => {
     if (!activeOrg?.id) {
@@ -114,6 +118,31 @@ export function ProductsPage() {
     }
   };
 
+  const submitEditProduct = async () => {
+    if (!editingProduct || !productForm.name.trim() || !productForm.productType.trim() || productForm.salesPrice === '' || productForm.costPrice === '') return;
+    setSaving(true);
+    try {
+      await updateProduct(activeOrg.id, editingProduct.id, { name: productForm.name.trim(), productType: productForm.productType.trim(), salesPrice: Number(productForm.salesPrice), costPrice: Number(productForm.costPrice), description: productForm.description.trim() || undefined });
+      setEditingProduct(null); setProductForm(initialProduct); addToast({ type: 'success', title: 'Product updated', message: 'The catalogue record was updated.' }); await loadProducts();
+    } catch (requestError) { addToast({ type: 'error', title: 'Product was not updated', message: requestError.response?.data?.error?.message || 'Try again.' }); } finally { setSaving(false); }
+  };
+  const submitEditVariant = async () => {
+    if (!editingVariant || !variantForm.name.trim() || !variantForm.basePrice) return;
+    setSaving(true);
+    try {
+      await updateProductVariant(activeOrg.id, editingVariant.productId, editingVariant.id, { name: variantForm.name.trim(), sku: variantForm.sku.trim() || undefined, basePrice: Number(variantForm.basePrice), priceAdjustment: variantForm.priceAdjustment === '' ? 0 : Number(variantForm.priceAdjustment), minQuantity: Number(variantForm.minQuantity || 1) });
+      setEditingVariant(null); setVariantForm(initialVariant); addToast({ type: 'success', title: 'Variant updated', message: 'The variant was updated.' }); await loadProducts();
+    } catch (requestError) { addToast({ type: 'error', title: 'Variant was not updated', message: requestError.response?.data?.error?.message || 'Try again.' }); } finally { setSaving(false); }
+  };
+  const confirmDelete = async () => {
+    if (!deleteTarget) return; setSaving(true);
+    try {
+      if (deleteTarget.type === 'product') await deleteProduct(activeOrg.id, deleteTarget.id);
+      else await deleteProductVariant(activeOrg.id, deleteTarget.productId, deleteTarget.id);
+      addToast({ type: 'success', title: `${deleteTarget.type === 'product' ? 'Product' : 'Variant'} removed`, message: 'The catalogue was refreshed.' }); setDeleteTarget(null); await loadProducts();
+    } catch (requestError) { addToast({ type: 'error', title: 'Delete failed', message: requestError.response?.data?.error?.message || 'This record could not be removed.' }); } finally { setSaving(false); }
+  };
+
   const setField = (setter, field) => (event) => setter((current) => ({ ...current, [field]: event.target.value }));
 
   return (
@@ -140,6 +169,8 @@ export function ProductsPage() {
 
       {activeOrg && error && <ErrorState message={error} onRetry={loadProducts} className="mb-6" />}
 
+      {activeOrg && !loading && !error && products.length > 0 && <div className="mb-5 flex flex-col gap-3 rounded-md border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between"><div className="relative w-full sm:max-w-sm"><Icon icon="lucide:search" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products or variants" className="w-full rounded-md border border-border bg-input py-2 pl-9 pr-3 text-sm" /></div><span className="font-mono text-xs text-muted-foreground">{products.filter((product) => `${product.name} ${product.productType} ${product.variants.map((variant) => variant.name).join(' ')}`.toLowerCase().includes(query.toLowerCase())).length} products</span></div>}
+
       {activeOrg && loading ? (
         <div className="space-y-3"><ProductSkeleton /><ProductSkeleton /><ProductSkeleton /></div>
       ) : activeOrg && !error && products.length === 0 ? (
@@ -164,7 +195,7 @@ export function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {products.filter((product) => `${product.name} ${product.productType} ${product.variants.map((variant) => variant.name).join(' ')}`.toLowerCase().includes(query.toLowerCase())).map((product) => (
                   <tr key={product.id} className="border-t border-border bg-surface text-sm transition-colors hover:bg-surface-raised">
                     <td className="px-4 py-3">
                       <div className="font-medium text-foreground">{product.name}</div>
@@ -176,8 +207,10 @@ export function ProductsPage() {
                       ) : (
                         <div className="space-y-1">
                           {product.variants.map((variant) => (
-                            <div key={variant.id} className="font-mono text-xs text-muted-foreground">
+                            <div key={variant.id} className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                               <span className="text-foreground">{variant.name}</span> · {formatIndianCurrency(variant.basePrice)} {Number(variant.priceAdjustment) !== 0 && `· ${Number(variant.priceAdjustment) > 0 ? '+' : ''}${formatIndianCurrency(variant.priceAdjustment)}`} · min {variant.minQuantity}
+                              <button type="button" onClick={() => { setEditingVariant({ ...variant, productId: product.id }); setVariantForm({ name: variant.name, sku: variant.sku || '', basePrice: String(variant.basePrice), priceAdjustment: String(variant.priceAdjustment || ''), minQuantity: String(variant.minQuantity) }); }} className="ml-1 text-primary hover:underline">Edit</button>
+                              <button type="button" onClick={() => setDeleteTarget({ type: 'variant', ...variant, productId: product.id })} className="text-error hover:underline">Delete</button>
                             </div>
                           ))}
                         </div>
@@ -189,6 +222,8 @@ export function ProductsPage() {
                       <Button variant="secondary" size="sm" onClick={() => setVariantProduct(product)}>
                         <Icon icon="lucide:plus" className="w-3.5 h-3.5" /> Variant
                       </Button>
+                      <Button variant="ghost" size="sm" className="ml-2" onClick={() => { setEditingProduct(product); setProductForm({ name: product.name, productType: product.productType, salesPrice: String(product.salesPrice), costPrice: String(product.costPrice), description: product.description || '' }); }}><Icon icon="lucide:pencil" className="h-3.5 w-3.5" />Edit</Button>
+                      <Button variant="ghost" size="sm" className="ml-2 text-error" onClick={() => setDeleteTarget({ type: 'product', ...product })}><Icon icon="lucide:trash-2" className="h-3.5 w-3.5" />Delete</Button>
                     </td>
                   </tr>
                 ))}
@@ -210,6 +245,10 @@ export function ProductsPage() {
         </div>
       </Modal>
 
+      <Modal isOpen={Boolean(editingProduct)} onClose={() => { setEditingProduct(null); setProductForm(initialProduct); }} title={`Edit ${editingProduct?.name || 'product'}`} description="Update this product’s catalogue details." confirmLabel="Save changes" onConfirm={submitEditProduct} isConfirmLoading={saving}>
+        <div className="space-y-4"><Input label="Product name" required value={productForm.name} onChange={setField(setProductForm, 'name')} /><Input label="Product type" required value={productForm.productType} onChange={setField(setProductForm, 'productType')} /><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><Input label="Sales price (₹)" required type="number" min="0" step="0.01" value={productForm.salesPrice} onChange={setField(setProductForm, 'salesPrice')} /><Input label="Cost price (₹)" required type="number" min="0" step="0.01" value={productForm.costPrice} onChange={setField(setProductForm, 'costPrice')} /></div><Textarea label="Notes" value={productForm.description} onChange={setField(setProductForm, 'description')} /></div>
+      </Modal>
+
       <Modal isOpen={Boolean(variantProduct)} onClose={() => setVariantProduct(null)} title={`Add variant to ${variantProduct?.name || 'product'}`} description="Set the fixed amount added to the product price and the minimum subscription quantity." confirmLabel="Add variant" onConfirm={submitVariant} isConfirmLoading={saving}>
         <div className="space-y-4">
           <Input label="Variant name" required value={variantForm.name} onChange={setField(setVariantForm, 'name')} placeholder="e.g. Odoo brand" />
@@ -221,6 +260,10 @@ export function ProductsPage() {
           <Input label="Minimum quantity" required type="number" min="1" step="1" value={variantForm.minQuantity} onChange={setField(setVariantForm, 'minQuantity')} />
         </div>
       </Modal>
+      <Modal isOpen={Boolean(editingVariant)} onClose={() => { setEditingVariant(null); setVariantForm(initialVariant); }} title={`Edit ${editingVariant?.name || 'variant'}`} description="Update this variant’s price and quantity rules." confirmLabel="Save changes" onConfirm={submitEditVariant} isConfirmLoading={saving}>
+        <div className="space-y-4"><Input label="Variant name" required value={variantForm.name} onChange={setField(setVariantForm, 'name')} /><Input label="SKU" value={variantForm.sku} onChange={setField(setVariantForm, 'sku')} /><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><Input label="Base price (₹)" required type="number" min="0.01" step="0.01" value={variantForm.basePrice} onChange={setField(setVariantForm, 'basePrice')} /><Input label="Price adjustment (₹)" type="number" step="0.01" value={variantForm.priceAdjustment} onChange={setField(setVariantForm, 'priceAdjustment')} /></div><Input label="Minimum quantity" required type="number" min="1" value={variantForm.minQuantity} onChange={setField(setVariantForm, 'minQuantity')} /></div>
+      </Modal>
+      <Modal isOpen={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} title={`Delete ${deleteTarget?.type || 'record'}`} description={`Delete “${deleteTarget?.name || ''}”? This action cannot be undone.`} confirmLabel="Delete" confirmVariant="destructive" onConfirm={confirmDelete} isConfirmLoading={saving}><p className="text-sm text-muted-foreground">Products with plans may be rejected by the server. Remove only records that are no longer needed.</p></Modal>
     </div>
   );
 }

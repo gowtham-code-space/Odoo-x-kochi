@@ -12,9 +12,9 @@ export function AuthProvider({ children }) {
       const currentUser = await getMe();
       setUser(currentUser);
     } catch {
-      // If saved in session fallback
+      // Offline demo state is allowed only when it is deliberately enabled.
       const cached = sessionStorage.getItem('nexus_user');
-      if (cached) {
+      if (import.meta.env.VITE_DEMO_MODE === 'true' && cached) {
         try {
           setUser(JSON.parse(cached));
         } catch {
@@ -47,14 +47,14 @@ export function AuthProvider({ children }) {
       sessionStorage.setItem('nexus_user', JSON.stringify(loggedInUser));
       return loggedInUser;
     } catch (err) {
-      // If backend server on port 4000 is offline / ECONNREFUSED
-      if (!err.response || err.code === 'ERR_NETWORK' || err.response?.status >= 500) {
-        console.warn('Backend server on port 4000 is unreachable. Activating local demo mode.');
+      if (import.meta.env.VITE_DEMO_MODE === 'true' && (!err.response || err.code === 'ERR_NETWORK' || err.response?.status >= 500)) {
+        console.warn('Development demo mode is enabled; no account was authenticated by the server.');
         const fallbackUser = {
           id: 'usr_demo_882',
           name: credentials.email.includes('admin') ? 'Arjun Menon' : 'Priya Sharma',
           email: credentials.email || 'demo@nexus.io',
-          role: credentials.email.includes('admin') ? 'ADMIN' : 'OWNER',
+          role: credentials.email.includes('staff') ? 'STAFF' : 'ADMIN',
+          isDemo: true,
           createdAt: new Date().toISOString(),
         };
         setUser(fallbackUser);
@@ -72,13 +72,14 @@ export function AuthProvider({ children }) {
       sessionStorage.setItem('nexus_user', JSON.stringify(newUser));
       return newUser;
     } catch (err) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.response?.status >= 500) {
-        console.warn('Backend server on port 4000 is unreachable. Activating local demo registration.');
+      if (import.meta.env.VITE_DEMO_MODE === 'true' && (!err.response || err.code === 'ERR_NETWORK' || err.response?.status >= 500)) {
+        console.warn('Development demo mode is enabled; registration was not saved to the server.');
         const fallbackUser = {
           id: 'usr_' + Math.random().toString(36).substring(2, 9),
           name: data.name || 'New Engineer',
           email: data.email,
-          role: 'OWNER',
+          role: 'ADMIN',
+          isDemo: true,
           createdAt: new Date().toISOString(),
         };
         setUser(fallbackUser);

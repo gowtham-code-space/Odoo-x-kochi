@@ -17,7 +17,7 @@ export function Input({
       {label && (
         <label
           htmlFor={inputId}
-          className="block mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          className="mb-1.5 block text-sm font-medium text-foreground"
         >
           {label} {required && <span className="text-primary">*</span>}
         </label>
@@ -26,8 +26,8 @@ export function Input({
         id={inputId}
         type={type}
         required={required}
-        className={`w-full h-11 rounded-lg px-3.5 text-sm text-foreground bg-[#131926] border border-[#222c3f] placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
-          error ? '!border-error !ring-error' : ''
+        className={`w-full rounded-md border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-2 focus:border-primary focus:outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+          error ? '!border-error' : 'border-border'
         } ${className}`}
         {...props}
       />

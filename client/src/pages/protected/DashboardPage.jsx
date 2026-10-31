@@ -1,286 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Icon } from '@iconify/react';
 import { PageHeader } from '../../components/layout/PageHeader.jsx';
 import { Card } from '../../components/layout/Card.jsx';
 import { Button } from '../../components/common/Button.jsx';
+import { KpiCard } from '../../components/common/KpiCard.jsx';
+import { DemoNotice } from '../../components/common/DemoNotice.jsx';
 import { Badge } from '../../components/common/Badge.jsx';
-import { Skeleton } from '../../components/common/Skeleton.jsx';
-import { ErrorState } from '../../components/common/ErrorState.jsx';
-import { EmptyState } from '../../components/common/EmptyState.jsx';
-import { getDashboardData } from '../../services/dashboard.service.js';
-import { formatIST, formatRelativeTime } from '../../utils/date.js';
-import { ROUTES } from '../../constants/routes.js';
-import { Icon } from '@iconify/react';
+import { useRole } from '../../hooks/useRole.js';
 import { useAuth } from '../../hooks/useAuth.js';
+import { DASHBOARD_DEMO, DEMO_DATA } from '../../data/demoData.js';
+import { ROUTES } from '../../constants/routes.js';
+import { formatIndianCurrency } from '../../utils/format.js';
+
+function AdminDashboard() {
+  const navigate = useNavigate(); const data = DASHBOARD_DEMO.admin;
+  return <>
+    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><KpiCard label="Total revenue" value={formatIndianCurrency(data.revenue)} detail="Sample current financial year" icon="lucide:indian-rupee" /><KpiCard label="Monthly recurring revenue" value={formatIndianCurrency(data.mrr)} detail="Sample active subscriptions" icon="lucide:repeat-2" tone="teal" /><KpiCard label="Annual recurring revenue" value={formatIndianCurrency(data.arr)} detail="Annualized sample value" icon="lucide:trending-up" tone="success" /><KpiCard label="Overdue invoices" value={data.overdue} detail="Sample collection follow-up" icon="lucide:circle-alert" tone="warning" /></div>
+    <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_1fr]"><Card title="Revenue trend" subtitle="Sample monthly collections"><div className="flex h-60 items-end gap-4">{[48,62,54,71,68,86].map((height, index) => <div key={height} className="flex flex-1 flex-col items-center gap-2"><div style={{ height: `${height}%` }} className="w-full rounded-sm bg-primary" /><span className="font-mono text-xs text-muted-foreground">M{index + 1}</span></div>)}</div></Card><Card title="Quick actions" subtitle="Start the next operational task"><div className="space-y-3"><Button className="w-full justify-start" onClick={() => navigate(ROUTES.PRODUCTS)}><Icon icon="lucide:package-plus" />Add product</Button><Button className="w-full justify-start" variant="secondary" onClick={() => navigate(ROUTES.QUOTATION_NEW)}><Icon icon="lucide:file-plus-2" />Create quotation</Button><Button className="w-full justify-start" variant="secondary" onClick={() => navigate(ROUTES.INVOICES)}><Icon icon="lucide:receipt" />Review invoices</Button></div></Card></div>
+    <div className="mt-6 grid gap-6 lg:grid-cols-2"><Card title="Recent subscriptions" subtitle="Sample subscription activity"><div className="space-y-3">{DEMO_DATA.subscriptions.slice(0, 3).map((row) => <div key={row.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="text-sm font-medium">{row.customer}</p><p className="font-mono text-xs text-muted-foreground">{row.id} · {row.plan}</p></div><Badge variant={row.status === 'Active' ? 'completed' : 'queued'}>{row.status}</Badge></div>)}</div></Card><Card title="Recent transactions" subtitle="Sample payment activity"><div className="space-y-3">{DEMO_DATA.payments.map((row) => <div key={row.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"><div><p className="text-sm font-medium">{row.customer}</p><p className="font-mono text-xs text-muted-foreground">{row.method} · {row.id}</p></div><span className="font-mono text-sm tabular-nums">{formatIndianCurrency(row.amount)}</span></div>)}</div></Card></div>
+  </>;
+}
+function StaffDashboard() { const navigate = useNavigate(); const data = DASHBOARD_DEMO.staff; return <><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><KpiCard label="Assigned customers" value={data.assigned} icon="lucide:users" /><KpiCard label="Active subscriptions" value={data.active} tone="success" icon="lucide:repeat-2" /><KpiCard label="Open quotations" value={data.quotations} tone="teal" icon="lucide:file-text" /><KpiCard label="Invoices to follow up" value={data.overdue} tone="warning" icon="lucide:circle-alert" /></div><div className="mt-6 grid gap-6 lg:grid-cols-2"><Card title="Operational queue" subtitle="Development-preview work items"><div className="space-y-3">{['Review quotation Q/2026/0042', 'Follow up invoice INV/2026/0086', 'Confirm subscription renewal'].map((item) => <button type="button" key={item} onClick={() => navigate(ROUTES.SUBSCRIPTIONS)} className="flex w-full items-center justify-between rounded-md border border-border p-3 text-left text-sm hover:bg-surface-raised"><span>{item}</span><Icon icon="lucide:arrow-right" className="h-4 w-4 text-primary" /></button>)}</div></Card><Card title="Allowed areas" subtitle="Role-scoped interface"><ul className="space-y-3 text-sm text-muted-foreground"><li className="flex gap-2"><Icon icon="lucide:check" className="h-4 w-4 text-success" />Manage quotations and subscriptions</li><li className="flex gap-2"><Icon icon="lucide:check" className="h-4 w-4 text-success" />Track product, plan, and invoice work</li><li className="flex gap-2"><Icon icon="lucide:lock" className="h-4 w-4 text-muted-foreground" />Admin-only discount and member controls stay unavailable</li></ul></Card></div></>; }
+function CustomerDashboard() { const data = DASHBOARD_DEMO.customer; const navigate = useNavigate(); return <><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><KpiCard label="Current plan" value="Growth" icon="lucide:layers" /><KpiCard label="Renewal date" value="01 Nov" tone="teal" icon="lucide:calendar-clock" /><KpiCard label="Billing balance" value={formatIndianCurrency(data.due)} tone="success" icon="lucide:circle-check" /><KpiCard label="Recent invoices" value={data.invoices} icon="lucide:receipt" /></div><div className="mt-6 grid gap-6 lg:grid-cols-2"><Card title="Your subscription" subtitle="Development preview"><div className="space-y-3 text-sm"><p className="font-medium">{data.plan}</p><p className="text-muted-foreground">Next renewal: {data.renewal}</p><Badge variant="completed">Active</Badge></div></Card><Card title="Account shortcuts" subtitle="Only your own account data will be shown after API connection."><div className="space-y-3"><Button className="w-full justify-start" onClick={() => navigate(ROUTES.PORTAL)}><Icon icon="lucide:user-round" />Open customer portal</Button><Button variant="secondary" className="w-full justify-start" onClick={() => navigate(ROUTES.INVOICES)}><Icon icon="lucide:receipt" />View my invoices</Button></div></Card></div></>; }
 
 export function DashboardPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchData = async () => {
-    setLoading(false);
-    try {
-      setLoading(true);
-      const res = await getDashboardData();
-      setData(res);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to load dashboard telemetry.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const stats = data?.stats || {
-    organizations: 0,
-    totalMembers: 0,
-    recentActivityCount: 0,
-  };
-
-  return (
-    <div>
-      <PageHeader
-        eyebrow="Cluster Telemetry"
-        title={`Welcome, ${user?.name?.split(' ')[0] || 'Engineer'}`}
-        subtitle="Multi-tenant management plane and natural-language database query engine."
-        actions={
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => navigate(ROUTES.ANALYTICS_NL)}
-            >
-              <Icon icon="lucide:sparkles" className="w-4 h-4 text-primary" />
-              <span>Launch NL Query</span>
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => navigate(ROUTES.ORGANIZATIONS_NEW)}
-            >
-              <Icon icon="lucide:plus" className="w-4 h-4" />
-              <span>New Tenant</span>
-            </Button>
-          </div>
-        }
-      />
-
-      {error && <ErrorState message={error} onRetry={fetchData} className="mb-8" />}
-
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-        {/* KPI 1 */}
-        <div className="rounded-xl border border-border bg-surface p-6">
-          <p className="text-sm text-muted-foreground font-medium">Authorized Workspaces</p>
-          <div className="flex items-baseline justify-between mt-2">
-            {loading ? (
-              <Skeleton width="60px" height="36px" />
-            ) : (
-              <span className="font-headings text-3xl font-bold tabular-nums text-foreground">
-                {stats.organizations}
-              </span>
-            )}
-            <span className="bg-success/15 text-success rounded-full px-2 py-0.5 text-xs font-mono">
-              Active
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Multi-tenant isolated PostgreSQL schemas
-          </p>
-        </div>
-
-        {/* KPI 2 */}
-        <div className="rounded-xl border border-border bg-surface p-6">
-          <p className="text-sm text-muted-foreground font-medium">Aggregated Memberships</p>
-          <div className="flex items-baseline justify-between mt-2">
-            {loading ? (
-              <Skeleton width="60px" height="36px" />
-            ) : (
-              <span className="font-headings text-3xl font-bold tabular-nums text-foreground">
-                {stats.totalMembers}
-              </span>
-            )}
-            <span className="bg-royal/15 text-royal rounded-full px-2 py-0.5 text-xs font-mono">
-              RBAC Verified
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            OWNER, ADMIN, and MEMBER roles
-          </p>
-        </div>
-
-        {/* KPI 3 */}
-        <div className="rounded-xl border border-border bg-surface p-6">
-          <p className="text-sm text-muted-foreground font-medium">Recorded Audit Events</p>
-          <div className="flex items-baseline justify-between mt-2">
-            {loading ? (
-              <Skeleton width="60px" height="36px" />
-            ) : (
-              <span className="font-headings text-3xl font-bold tabular-nums text-foreground">
-                {stats.recentActivityCount}
-              </span>
-            )}
-            <span className="bg-primary/15 text-foreground rounded-full px-2 py-0.5 text-xs font-mono">
-              Live IST
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Compliance trail for DPDP governance
-          </p>
-        </div>
-      </div>
-
-      {/* Main Split Layout: Quick Actions & Audit Trail */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-6">
-        {/* Left Column: Quick Launch & Workspaces */}
-        <div className="space-y-6">
-          <Card
-            title="Assigned Workspaces"
-            subtitle="Tenant boundaries resolved with strict database isolation"
-            actions={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(ROUTES.ORGANIZATIONS)}
-              >
-                View all
-              </Button>
-            }
-          >
-            {loading ? (
-              <div className="space-y-3">
-                <Skeleton height="50px" />
-                <Skeleton height="50px" />
-              </div>
-            ) : !data?.organizations || data.organizations.length === 0 ? (
-              <EmptyState
-                title="No organizations provisioned"
-                description="Create your first organization to establish tenant boundary."
-                actionLabel="Create Workspace"
-                onAction={() => navigate(ROUTES.ORGANIZATIONS_NEW)}
-              />
-            ) : (
-              <div className="space-y-2.5">
-                {data.organizations.map((org) => (
-                  <div
-                    key={org.id}
-                    onClick={() => navigate(ROUTES.ORGANIZATIONS)}
-                    className="flex items-center justify-between p-3.5 rounded-md border border-border bg-input hover:bg-surface-raised cursor-pointer transition-colors"
-                  >
-                    <div>
-                      <p className="font-medium text-sm text-foreground">{org.name}</p>
-                      <span className="text-xs font-mono text-muted-foreground">
-                        slug: {org.slug}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {org.memberCount} member{org.memberCount === 1 ? '' : 's'}
-                      </span>
-                      <span className="text-xs font-mono uppercase px-2 py-0.5 rounded-sm bg-muted text-muted-foreground border border-border">
-                        {org.role}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* Hackathon Readiness Card */}
-          <Card
-            title="Enterprise Foundation"
-            subtitle="Architected for immediate hackathon domain expansion"
-          >
-            <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
-              <div className="flex items-start gap-2.5">
-                <Icon icon="lucide:check-circle-2" className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-foreground">Shared-schema Multi-tenancy:</strong> Every query resolves tenant via verified membership in <code className="font-mono text-foreground">resolveTenant</code> middleware.
-                </span>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Icon icon="lucide:check-circle-2" className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-foreground">Zero-Trust LLM Interface:</strong> Natural language questions generate bounded intermediate query proposals without running arbitrary SQL.
-                </span>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Icon icon="lucide:check-circle-2" className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-foreground">HTTP-Only JWT Persistence:</strong> Session tokens are immune to XSS with Lax SameSite cookie flags.
-                </span>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Right Column: Audit Log & Activity */}
-        <Card
-          title="Audit Trail & Telemetry"
-          subtitle="Real database audit records with IST timestamps"
-          actions={
-            <Button variant="ghost" size="sm" onClick={fetchData}>
-              <Icon icon="lucide:refresh-cw" className="w-3.5 h-3.5" />
-            </Button>
-          }
-        >
-          {loading ? (
-            <div className="space-y-3">
-              <Skeleton height="40px" />
-              <Skeleton height="40px" />
-              <Skeleton height="40px" />
-              <Skeleton height="40px" />
-            </div>
-          ) : !data?.recentActivity || data.recentActivity.length === 0 ? (
-            <EmptyState
-              title="No audit events recorded"
-              description="Actions performed in organizations will produce verifiable audit entries."
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="bg-surface-raised font-mono text-[11px] uppercase tracking-widest text-muted-foreground border-b border-border">
-                    <th className="px-3.5 py-2.5">Action</th>
-                    <th className="px-3.5 py-2.5">Scope</th>
-                    <th className="px-3.5 py-2.5 text-right">Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.recentActivity.map((log) => (
-                    <tr
-                      key={log.id}
-                      className="hover:bg-surface-raised transition-colors text-xs"
-                    >
-                      <td className="px-3.5 py-3 font-mono font-medium text-foreground">
-                        {log.action}
-                      </td>
-                      <td className="px-3.5 py-3 text-muted-foreground">
-                        {log.organization?.name || 'Global'}
-                      </td>
-                      <td
-                        className="px-3.5 py-3 text-right font-mono text-muted-foreground tabular-nums"
-                        title={formatIST(log.createdAt)}
-                      >
-                        {formatRelativeTime(log.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
-  );
+  const { user } = useAuth(); const role = useRole();
+  return <div><PageHeader eyebrow={`${role.charAt(0)}${role.slice(1).toLowerCase()} workspace`} title={`Welcome, ${user?.name?.split(' ')[0] || 'there'}`} subtitle="A role-aware view of subscription operations. Dashboard figures are clearly marked development-preview data until reporting APIs are connected." /><DemoNotice />{role === 'CUSTOMER' ? <CustomerDashboard /> : role === 'STAFF' ? <StaffDashboard /> : <AdminDashboard />}</div>;
 }
-

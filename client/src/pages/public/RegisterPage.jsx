@@ -36,7 +36,7 @@ export function RegisterPage() {
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (!validatePassword(password)) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = 'Use more than 8 characters with uppercase, lowercase, and a special character';
     }
     if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
@@ -114,7 +114,7 @@ export function RegisterPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
-          placeholder="Min 8 characters"
+          placeholder="Strong password"
           autoComplete="new-password"
           required
         />
@@ -134,9 +134,9 @@ export function RegisterPage() {
           type="submit"
           variant="primary"
           isLoading={loading}
-          className="w-full h-11 text-sm font-semibold rounded-lg shadow-md shadow-primary/20 mt-3"
+          className="mt-3 w-full"
         >
-          Create Workspace Profile
+          Create account
         </Button>
       </form>
 

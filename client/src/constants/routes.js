@@ -20,6 +20,9 @@ export const ROUTES = {
   DISCOUNT_NEW:       '/discounts/new',
   INVOICES:           '/invoices',
   PAYMENTS:           '/payments',
+  CUSTOMERS:          '/customers',
+  REPORTS:            '/reports',
+  PORTAL:             '/portal',
   SETTINGS:           '/settings',
 
   // Error pages

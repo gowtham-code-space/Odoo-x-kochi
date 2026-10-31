@@ -59,13 +59,6 @@ export function LoginPage() {
     }
   };
 
-  const handleFillDemo = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setErrors({});
-    setServerError(null);
-  };
-
   return (
     <div>
       {/* Header */}
@@ -120,47 +113,10 @@ export function LoginPage() {
         </Button>
       </form>
 
-      {/* Quick Fill Demo Section */}
-      <div className="mt-8 pt-6 border-t border-[#222c3f]">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
-            Development Accounts
-          </span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
-            Seeded
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => handleFillDemo('demo@nexus.io', 'demo123')}
-            className="p-3 text-left rounded-lg border border-[#222c3f] bg-[#131926] hover:bg-[#182030] hover:border-primary/40 transition-all cursor-pointer group"
-          >
-            <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-              Priya (Owner)
-            </p>
-            <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
-              demo123
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleFillDemo('admin@nexus.io', 'admin123')}
-            className="p-3 text-left rounded-lg border border-[#222c3f] bg-[#131926] hover:bg-[#182030] hover:border-primary/40 transition-all cursor-pointer group"
-          >
-            <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-              Arjun (Lead)
-            </p>
-            <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
-              admin123
-            </p>
-          </button>
-        </div>
-      </div>
-
       {/* Footer Navigation */}
       <div className="mt-6 text-center text-xs text-muted-foreground">
+        <Link to={ROUTES.FORGOT_PASSWORD} className="font-medium text-primary hover:underline">Forgot password?</Link>
+        <span className="mx-2">·</span>
         Need a new organization workspace?{' '}
         <Link
           to={ROUTES.REGISTER}

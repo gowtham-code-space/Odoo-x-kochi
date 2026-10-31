@@ -4,13 +4,14 @@ Status values: **Complete** means verified in the stated scope; **In progress** 
 
 | Area | Frontend | Backend | Database | API integration | Testing | Status / evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| Foundation, tenancy, roles | Existing shell and organization context | JWT auth, tenant resolver, role middleware | Schema present; migration history absent | Existing auth and organization endpoints | `npm run test --prefix server`: 11/11 pass | In progress — password reset and Admin staff-management flows remain. |
-| Product catalogue | Product list and create-product/variant modals | Tenant-scoped product service, validation, and authorization | Product and variant schema defined; local migration not applied | `GET`/`POST /organizations/:organizationId/products` and variant create route are connected | Client build passes; role/tenant unit suite passes; no live PostgreSQL integration test yet | In progress — do not mark complete until the local database flow is verified. |
-| Plan management | No page wired | Service, repository, and routes exist but are not registered | Plan schema defined; local migration not applied | Not connected to the client or root API router | No plan flow test | Not started as a verified vertical slice. |
-| Quotations | No page wired | Repository, service, and validation exist; controller/routes absent | Schema defined; local migration not applied | Not connected | No flow test | Not started as a verified vertical slice. |
-| Subscriptions | No page wired | Repository, service, and validation exist; controller/routes absent | Schema defined; local migration not applied | Not connected | No flow test | Not started as a verified vertical slice. |
-| Invoices, GST, discounts, payments, finance | No implementation verified | Schema only in current worktree | Schema defined; local migration not applied | Not connected | No tests | Not started. |
-| Landing page and public routes | Existing auth screens only | Existing auth routes only | N/A | Existing auth integration | Client build passes | Not started against Phase 2 scope. |
+| Foundation, tenancy, roles | Responsive shell, role-aware navigation, Admin/Staff/Customer dashboards | JWT auth, tenant resolver, role middleware | Initial migration applied locally to `odoo_kochi_dev` | Auth and organization endpoints connected; role UI is supplementary | `npm run test --prefix server`: 11/11 pass | In progress — password reset and Admin staff-management APIs remain. |
+| Product catalogue | Listing, search, create, edit, delete confirmation, and variant controls | Tenant-scoped product service, validation, and authorization | Initial migration applied locally | Catalogue endpoints are connected; product editing/deletion uses existing API endpoints | Client production build passes; live catalogue flow needs authenticated browser/API verification | In progress — do not mark complete until the local database flow is verified. |
+| Plan management | Listing, create modal, search/sort/pagination, archive interaction | Existing service/repository/routes are not registered | Initial schema table exists; later plan-rule changes are pending migration | Development-only local preview adapter | Client production build passes | Frontend preview complete; not backend-integrated. |
+| Quotations | Listing, create modal, status actions, conversion affordance | Repository/service exist; controller/routes absent | Initial schema table exists | Development-only local preview adapter | Client production build passes | Frontend preview complete; not backend-integrated. |
+| Subscriptions | Listing, create modal, plan-change and lifecycle interactions | Repository/service exist; controller/routes absent | Initial schema table exists | Development-only local preview adapter | Client production build passes | Frontend preview complete; not backend-integrated. |
+| Invoices, GST, discounts, payments, finance | Invoice, payment, discount screens and finance dashboard/reporting views | Not implemented as verified API flows | Initial schema tables exist | Development-only local preview adapter; no payment gateway claim | Client production build passes | Frontend preview complete; backend integration pending. |
+| Customers and customer portal | Customer list and isolated customer portal layout | Customer-specific access APIs pending | N/A | Development-only local preview adapter | Client production build passes | Frontend preview complete; server ownership enforcement pending. |
+| Landing page and public routes | Landing page, login, registration, forgot/reset password, unauthorized/session handling | Login/registration exist; password reset endpoints pending | N/A | Existing login/registration connected; recovery UI reports unavailable API honestly | Client production build passes | Frontend implementation complete; password-reset backend pending. |
 
 ## Product catalogue verification gate
 
@@ -28,9 +29,11 @@ The following must all pass before changing the product catalogue row to **Compl
 - `npm run test --prefix server` passed: **11/11** tenant-isolation and role-authorization tests.
 - `npm run build --prefix client` passed.
 - `npm run generate --prefix server` passed after restoring server dependencies with `npm install`; the generated `server/package-lock.json` now records the server dependency tree.
-- `npm run migrate --prefix server -- --help` passed, confirming the local Prisma CLI is restored. No migration was applied.
-- `prisma validate` passed with a temporary placeholder `DATABASE_URL`; this validates the schema only and does not exercise a database.
-- No live PostgreSQL verification was run: `server/.env` and a process-level `DATABASE_URL` are absent. No PostgreSQL service, CLI, installation, or listener on port 5432 was found on this machine.
+- `npm run migrate --prefix server -- --help` passed, confirming the local Prisma CLI is restored.
+- PostgreSQL 17 is running locally and the ignored `server/.env` connects to local `odoo_kochi_dev` at `127.0.0.1:5432`.
+- Read-only introspection confirmed the local database was empty. Reviewed migration `20261031071945_init_subscription_management` was applied successfully; `prisma migrate status` reports the database schema is up to date for that migration.
+- The current Prisma schema has subsequent un-applied workflow changes. They are intentionally not migrated during the frontend-only implementation pass.
+- Frontend production build passed after the landing page, application shell, role-based dashboards, catalogue improvements, and preview modules were added.
 
 ## Safe local migration procedure
 
@@ -50,4 +53,8 @@ Before migration commands, ensure the local Prisma CLI is available. In this che
 4. For a pre-existing local database, stop if Prisma reports schema drift or requests a reset. Do not use `migrate reset`. Establish a reviewed baseline migration or have a database owner review a generated diff before applying any change.
 5. After a successful migration, run `npm run generate`, `npm run test`, and the Product catalogue verification gate above. Record the actual results in this tracker.
 
-The application has not run against a configured local PostgreSQL database in this worktree, so none of these integration steps have been claimed as completed.
+The application has a configured local PostgreSQL database and the initial migration is applied. Product flow and role verification still need authenticated browser/API integration tests before the catalogue can be marked fully complete.
+
+## Frontend implementation note
+
+Plans, quotations, subscriptions, invoices, payments, discounts, customers, reports, and portal pages use a clearly labelled local development-preview adapter until their APIs are implemented. Their UI interactions update browser-only preview state and notify the user that no server record was saved.

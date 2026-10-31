@@ -51,7 +51,7 @@ export function OrgSwitcher() {
           <div className="max-h-60 overflow-y-auto space-y-0.5">
             {organizations.map((org) => {
               const isSelected = org.id === activeOrg?.id;
-              const userRole = org.memberships?.[0]?.role || 'MEMBER';
+              const userRole = org.memberships?.[0]?.role || 'CUSTOMER';
               return (
                 <button
                   key={org.id}
@@ -59,8 +59,8 @@ export function OrgSwitcher() {
                   onClick={() => handleSelect(org.id)}
                   className={`w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-sm text-left transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-[#1c2436] text-white border border-[#263248]'
-                      : 'text-foreground hover:bg-muted border border-transparent'
+                      ? 'border border-primary/30 bg-primary/10 text-primary'
+                      : 'border border-transparent text-foreground hover:bg-muted'
                   }`}
                 >
                   <div className="truncate pr-2">
