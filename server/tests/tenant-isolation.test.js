@@ -17,8 +17,8 @@ const ORG_A = { id: 'org-a', name: 'Org A', slug: 'org-a', createdById: USER_A.i
 const ORG_B = { id: 'org-b', name: 'Org B', slug: 'org-b', createdById: USER_B.id };
 
 const MEMBERSHIPS = [
-  { userId: USER_A.id, organizationId: ORG_A.id, role: 'OWNER', organization: ORG_A },
-  { userId: USER_B.id, organizationId: ORG_B.id, role: 'OWNER', organization: ORG_B },
+  { userId: USER_A.id, organizationId: ORG_A.id, role: 'ADMIN', organization: ORG_A },
+  { userId: USER_B.id, organizationId: ORG_B.id, role: 'ADMIN', organization: ORG_B },
 ];
 
 /**
@@ -97,7 +97,7 @@ describe('Tenant isolation', () => {
 
   test('resolveTenant returns membership for valid member', async () => {
     const result = await simulateResolveTenant(USER_A.id, ORG_A.id);
-    assert.equal(result?.role, 'OWNER');
+    assert.equal(result?.role, 'ADMIN');
     assert.equal(result?.organizationId, ORG_A.id);
   });
 });
@@ -112,24 +112,24 @@ describe('Role authorization', () => {
     return true;
   }
 
-  test('OWNER is authorized when OWNER is required', () => {
-    assert.doesNotThrow(() => checkRole('OWNER', ['OWNER']));
+  test('ADMIN is authorized when ADMIN is required', () => {
+    assert.doesNotThrow(() => checkRole('ADMIN', ['ADMIN']));
   });
 
-  test('MEMBER is denied when ADMIN or OWNER is required', () => {
+  test('CUSTOMER is denied when ADMIN or STAFF is required', () => {
     assert.throws(
-      () => checkRole('MEMBER', ['ADMIN', 'OWNER']),
+      () => checkRole('CUSTOMER', ['ADMIN', 'STAFF']),
       (err) => err.statusCode === 403
     );
   });
 
-  test('ADMIN is authorized when ADMIN or OWNER is required', () => {
-    assert.doesNotThrow(() => checkRole('ADMIN', ['ADMIN', 'OWNER']));
+  test('STAFF is authorized when STAFF access is required', () => {
+    assert.doesNotThrow(() => checkRole('STAFF', ['ADMIN', 'STAFF']));
   });
 
   test('Missing role (undefined) is always denied', () => {
     assert.throws(
-      () => checkRole(undefined, ['OWNER']),
+      () => checkRole(undefined, ['ADMIN']),
       (err) => err.statusCode === 403
     );
   });

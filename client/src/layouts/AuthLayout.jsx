@@ -1,36 +1,40 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { ToastContainer } from '../components/feedback/ToastContainer.jsx';
+import { ROUTES } from '../constants/routes.js';
 
 export function AuthLayout() {
   return (
-    <div className="min-h-screen bg-[#090c13] text-[#f5f3ee] flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-primary selection:text-white">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-primary/20 selection:text-primary">
       {/* Brand Header */}
       <div className="w-full max-w-md mx-auto text-center mb-8">
-        <div className="inline-flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-headings font-bold text-xl shadow-lg shadow-primary/20">
-            N
+        <Link to={ROUTES.HOME} className="inline-flex items-center gap-3 mb-3 group">
+          <div
+            className="w-9 h-9 rounded-md flex items-center justify-center text-primary-foreground font-bold text-base shadow-sm"
+            style={{ backgroundColor: 'var(--color-primary)' }}
+          >
+            S
           </div>
-          <span className="font-headings font-bold text-2xl tracking-tight text-foreground">
-            Nexus
+          <span className="font-headings font-semibold text-xl tracking-tight text-foreground">
+            SubsManager
           </span>
-        </div>
+        </Link>
         <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground font-medium">
-          Enterprise Operations Platform
+          Subscription Billing Platform
         </p>
       </div>
 
       {/* Main Form Card */}
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-[#111622] border border-[#222c3f] rounded-2xl p-8 sm:p-10 shadow-2xl shadow-black/40">
+        <div className="bg-surface border border-border rounded-xl p-8 sm:p-10">
           <Outlet />
         </div>
 
-        {/* Security & Region Footer */}
-        <div className="mt-8 text-center space-y-1">
+        {/* Footer */}
+        <div className="mt-6 text-center">
           <p className="text-xs font-mono text-muted-foreground flex items-center justify-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-success" />
-            Isolated Multi-Tenant Security &bull; High Availability Cluster
+            Secure · Multi-tenant · GST compliant
           </p>
         </div>
       </div>

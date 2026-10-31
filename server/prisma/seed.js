@@ -68,10 +68,10 @@ async function main() {
   // Create memberships
   await prisma.membership.createMany({
     data: [
-      { userId: demoUser.id, organizationId: org1.id, role: 'OWNER' },
-      { userId: demoUser.id, organizationId: org2.id, role: 'MEMBER' },
-      { userId: adminUser.id, organizationId: org2.id, role: 'OWNER' },
-      { userId: adminUser.id, organizationId: org1.id, role: 'ADMIN' },
+      { userId: demoUser.id, organizationId: org1.id, role: 'ADMIN' },
+      { userId: demoUser.id, organizationId: org2.id, role: 'CUSTOMER' },
+      { userId: adminUser.id, organizationId: org2.id, role: 'ADMIN' },
+      { userId: adminUser.id, organizationId: org1.id, role: 'STAFF' },
     ],
   });
 
@@ -110,7 +110,7 @@ async function main() {
         organizationId: org1.id,
         action: 'MEMBER_INVITED',
         resource: 'membership',
-        metadata: { invitedEmail: 'riya@example.com', role: 'MEMBER' },
+        metadata: { invitedEmail: 'riya@example.com', role: 'STAFF' },
         createdAt: new Date(now - 2 * 60 * 60 * 1000),
       },
     ],

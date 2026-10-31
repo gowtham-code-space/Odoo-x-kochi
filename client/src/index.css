@@ -1,67 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
-:root {
-  --color-background: #090c13;
-  --color-surface: #111622;
-  --color-surface-raised: #182030;
-  --color-input: #131926;
-  --color-border: #222c3f;
-  --color-border-subtle: #1c2433;
-  --color-foreground: #f5f3ee;
-  --color-muted: #1a2233;
-  --color-muted-foreground: #8d98ab;
-  --color-primary: #d92d65;
-  --color-primary-hover: #c42457;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #1c2436;
-  --color-secondary-foreground: #f5f3ee;
-  --color-success: #0f9d6c;
-  --color-warning: #e8a013;
-  --color-error: #ff5c3a;
-  --color-error-foreground: #090c13;
-  --color-royal: #3b5bff;
-  --color-gold: #c99a2b;
-
-  --font-headings: "Space Grotesk", sans-serif;
-  --font-body: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-}
+/* =========================================================
+   Odoo-themed design system — instruction.md §3 tokens
+   Primary: Odoo purple #714b67   Secondary teal: #017e84
+   Light surfaces only. No dark mode.
+   ========================================================= */
 
 @theme {
-  --color-background: #090c13;
-  --color-surface: #111622;
-  --color-surface-raised: #182030;
-  --color-input: #131926;
-  --color-border: #222c3f;
-  --color-border-subtle: #1c2433;
-  --color-foreground: #f5f3ee;
-  --color-muted: #1a2233;
-  --color-muted-foreground: #8d98ab;
-  --color-primary: #d92d65;
+  --color-background:    #f9fafb;   /* page */
+  --color-surface:       #ffffff;   /* cards, panels */
+  --color-surface-raised:#f1f3f5;   /* hover rows, menus, table header */
+  --color-input:         #ffffff;   /* inputs, inner tiles */
+  --color-border:        #d8dadd;
+  --color-foreground:    #212529;   /* primary text */
+  --color-muted:         #eef0f2;   /* disabled fill, skeletons, tracks */
+  --color-muted-foreground: #5f6368;/* secondary text */
+  --color-primary:       #714b67;   /* Odoo purple — the only accent */
   --color-primary-foreground: #ffffff;
-  --color-secondary: #1c2436;
-  --color-secondary-foreground: #f5f3ee;
-  --color-success: #0f9d6c;
-  --color-warning: #e8a013;
-  --color-error: #ff5c3a;
-  --color-error-foreground: #090c13;
-  --color-royal: #3b5bff;
-  --color-gold: #c99a2b;
+  --color-secondary:     #e9ecef;
+  --color-secondary-foreground: #212529;
+  --color-success:       #14825f;
+  --color-warning:       #9a6700;   /* amber dark enough for text on white */
+  --color-error:         #dc3545;
+  --color-teal:          #017e84;   /* Odoo secondary: info, chart mid */
+  --color-gold:          #e4a900;   /* compliance badges */
 
-  --font-headings: "Space Grotesk";
-  --font-body: "Inter";
-  --font-mono: "IBM Plex Mono";
+  --font-headings: "Inter";
+  --font-body:     "Inter";
+  --font-mono:     "IBM Plex Mono";
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 4px;   /* checkbox, tag badge, chart bar, skeleton */
+  --radius-md: 8px;   /* buttons, inputs, tiles, tables, menus */
+  --radius-xl: 24px;  /* cards, sections, modals */
+
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Also expose as CSS custom props for non-Tailwind usage */
+:root {
+  --color-background:    #f9fafb;
+  --color-surface:       #ffffff;
+  --color-surface-raised:#f1f3f5;
+  --color-input:         #ffffff;
+  --color-border:        #d8dadd;
+  --color-foreground:    #212529;
+  --color-muted:         #eef0f2;
+  --color-muted-foreground: #5f6368;
+  --color-primary:       #714b67;
+  --color-primary-foreground: #ffffff;
+  --color-secondary:     #e9ecef;
+  --color-secondary-foreground: #212529;
+  --color-success:       #14825f;
+  --color-warning:       #9a6700;
+  --color-error:         #dc3545;
+  --color-teal:          #017e84;
+  --color-gold:          #e4a900;
+
+  --font-headings: "Inter", system-ui, -apple-system, sans-serif;
+  --font-body:     "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono:     "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-xl: 24px;
 }
 
 *, *::before, *::after {
@@ -81,37 +84,37 @@ body {
   font-family: var(--font-body);
   font-size: 0.9375rem;
   line-height: 1.6;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
 }
 
 #root {
   min-height: 100%;
 }
 
-/* Explicit form element styling to ensure dark SaaS aesthetic across all browsers */
+/* ---- Form element resets (light theme) ---- */
 input, textarea, select {
-  background-color: var(--color-input) !important;
-  color: var(--color-foreground) !important;
-  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-input);
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border);
   font-family: var(--font-body);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 input:focus, textarea:focus, select:focus {
-  outline: none !important;
-  border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 2px rgba(217, 45, 101, 0.25) !important;
+  outline: none;
+  border-color: var(--color-primary);
+  border-width: 2px;
 }
 
 input::placeholder, textarea::placeholder {
-  color: var(--color-muted-foreground) !important;
+  color: var(--color-muted-foreground);
   opacity: 0.7;
 }
 
-/* Base custom font helpers */
+/* ---- Font helpers ---- */
 .font-headings {
   font-family: var(--font-headings);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
 }
 
 .font-body {
@@ -122,13 +125,14 @@ input::placeholder, textarea::placeholder {
   font-family: var(--font-mono);
 }
 
-/* Focus styles */
+/* ---- Focus styles (WCAG AA visible) ---- */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
-/* Scrollbar */
+/* ---- Scrollbar ---- */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -144,38 +148,59 @@ input::placeholder, textarea::placeholder {
   background: var(--color-muted-foreground);
 }
 
-/* Tabular nums */
+/* ---- Tabular numbers ---- */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Skeleton animation */
+/* ---- Skeleton shimmer ---- */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, var(--color-muted) 25%, var(--color-surface-raised) 50%, var(--color-muted) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-muted) 25%,
+    var(--color-surface-raised) 50%,
+    var(--color-muted) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite;
 }
 
-/* Status dot pulse */
+/* ---- Status dot pulse (Running / Active) ---- */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+  50%       { opacity: 0.4; transform: scale(0.85); }
 }
 
 .pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
-/* In-place spinner */
+/* ---- In-place spinner ---- */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
 .spinner {
   animation: spin 0.75s linear infinite;
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .skeleton-shimmer {
+    animation: none;
+    background: var(--color-muted);
+  }
+  .pulse-dot {
+    animation: none;
+  }
 }

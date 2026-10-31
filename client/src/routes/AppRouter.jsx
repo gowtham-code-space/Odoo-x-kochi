@@ -17,6 +17,7 @@ import { DashboardPage } from '../pages/protected/DashboardPage.jsx';
 import { OrganizationsPage } from '../pages/protected/OrganizationsPage.jsx';
 import { NewOrganizationPage } from '../pages/protected/NewOrganizationPage.jsx';
 import { SettingsPage } from '../pages/protected/SettingsPage.jsx';
+import { ProductsPage } from '../pages/protected/ProductsPage.jsx';
 import { AnalyticsPage } from '../pages/protected/AnalyticsPage.jsx';
 import { NLAnalyticsPage } from '../pages/protected/NLAnalyticsPage.jsx';
 import { NotFoundPage } from '../pages/errors/NotFoundPage.jsx';
@@ -46,6 +47,7 @@ export function AppRouter() {
             <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
             <Route path={ROUTES.ANALYTICS} element={<AnalyticsPage />} />
             <Route path={ROUTES.ANALYTICS_NL} element={<NLAnalyticsPage />} />
+            <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
           </Route>
         </Route>
 

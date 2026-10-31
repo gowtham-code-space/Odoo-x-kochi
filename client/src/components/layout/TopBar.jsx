@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { OrgSwitcher } from '../navigation/OrgSwitcher.jsx';
-import { Badge } from '../common/Badge.jsx';
 import { Icon } from '@iconify/react';
+import { useAuth } from '../../hooks/useAuth.js';
 
 export function TopBar() {
+  const { user } = useAuth();
   const [timeIST, setTimeIST] = useState('');
 
   useEffect(() => {
@@ -25,26 +25,28 @@ export function TopBar() {
   }, []);
 
   return (
-    <header className="h-16 border-b border-[#222c3f] bg-[#111622] px-8 flex items-center justify-between shrink-0">
-      <div className="flex items-center gap-5">
-        <OrgSwitcher />
-        <div className="hidden sm:flex items-center gap-2.5">
-          <Badge variant="compliance">
-            <Icon icon="lucide:shield-check" className="w-3.5 h-3.5 text-gold" />
-            <span>DPDP Aligned</span>
-          </Badge>
-          <span className="text-xs font-mono text-muted-foreground flex items-center gap-1.5 px-2 py-1 rounded bg-[#182030] border border-[#222c3f]">
-            <span className="w-1.5 h-1.5 rounded-full bg-success" />
-            ap-south-1
-          </span>
-        </div>
+    <header className="h-14 border-b border-border bg-surface px-6 flex items-center justify-between shrink-0">
+      {/* Left: Status indicator */}
+      <div className="flex items-center gap-4">
+        <span className="text-xs font-mono text-muted-foreground flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-raised border border-border">
+          <span className="w-1.5 h-1.5 rounded-full bg-success pulse-dot" />
+          System operational
+        </span>
       </div>
 
+      {/* Right: time + user */}
       <div className="flex items-center gap-4">
-        <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground tabular-nums px-2.5 py-1 rounded bg-[#131926] border border-[#222c3f]">
+        <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground tabular-nums px-2.5 py-1 rounded-md bg-surface-raised border border-border">
           <Icon icon="lucide:clock" className="w-3.5 h-3.5 text-primary" />
           <span>{timeIST}</span>
         </div>
+
+        {user && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Icon icon="lucide:user" className="w-4 h-4" />
+            <span className="hidden sm:inline font-medium text-foreground">{user.name}</span>
+          </div>
+        )}
       </div>
     </header>
   );

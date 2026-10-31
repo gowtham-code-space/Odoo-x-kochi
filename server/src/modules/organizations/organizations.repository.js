@@ -10,7 +10,7 @@ export async function createOrganization({ name, slug, description, createdById 
       data: {
         userId: createdById,
         organizationId: org.id,
-        role: 'OWNER',
+        role: 'ADMIN',
       },
     });
 

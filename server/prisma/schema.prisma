@@ -7,11 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ===================================================================
+// IDENTITY & ACCESS
+// ===================================================================
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String
   passwordHash String
+  phone        String?
+  // Password reset
+  resetToken   String?
+  resetExpiry  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -27,14 +35,27 @@ model Organization {
   name        String
   slug        String  @unique
   description String?
+  gstin       String?  // GST Identification Number
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdById String
 
-  creator     User         @relation("OrgCreator", fields: [createdById], references: [id])
-  memberships Membership[]
-  auditLogs   AuditLog[]
+  creator       User           @relation("OrgCreator", fields: [createdById], references: [id])
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  products      Product[]
+  plans         Plan[]
+  quotations    Quotation[]
+  subscriptions Subscription[]
+  invoices      Invoice[]
+  payments      Payment[]
+  discounts     Discount[]
+  taxes         Tax[]
 
   @@map("organizations")
 }
@@ -43,7 +64,7 @@ model Membership {
   id             String         @id @default(cuid())
   userId         String
   organizationId String
-  role           MembershipRole @default(MEMBER)
+  role           MembershipRole @default(CUSTOMER)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -72,8 +93,355 @@ model AuditLog {
 }
 
 enum MembershipRole {
-  OWNER
-  ADMIN
-  MEMBER
+  ADMIN     // Full access (was OWNER)
+  STAFF     // Operational access (was ADMIN)
+  CUSTOMER  // Customer-facing read/self-service (was MEMBER)
 }
 
+// ===================================================================
+// PRODUCT CATALOGUE
+// ===================================================================
+
+model Product {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  productType    String
+  salesPrice     Decimal  @db.Decimal(12, 2)
+  costPrice      Decimal  @db.Decimal(12, 2)
+  description    String?
+  category       String?
+  isActive       Boolean  @default(true)
+  availableFrom  DateTime?
+  availableUntil DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  variants     ProductVariant[]
+  plans        Plan[]
+
+  @@index([organizationId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id             String  @id @default(cuid())
+  productId      String
+  name           String          // e.g. "Annual 10-seat", "Monthly Basic"
+  sku            String?
+  basePrice      Decimal         @db.Decimal(12, 2)
+  priceAdjustment Decimal        @db.Decimal(12, 2) @default(0) // fixed adjustment, e.g. Odoo brand +₹560
+  priceAdjustmentPct Decimal?    @db.Decimal(5, 2) // % adjustment from product base
+  minQuantity    Int             @default(1)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quotationLines QuotationLine[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+// ===================================================================
+// PLANS & BILLING
+// ===================================================================
+
+model Plan {
+  id               String           @id @default(cuid())
+  organizationId   String
+  productId        String
+  name             String           // e.g. "Starter Monthly", "Pro Annual"
+  description      String?
+  billingFrequency BillingFrequency
+  basePrice        Decimal          @db.Decimal(12, 2)
+  setupFee         Decimal?         @db.Decimal(12, 2)
+  trialDays        Int              @default(0)
+  minQuantity      Int              @default(1)
+  isActive         Boolean          @default(true)
+  availableFrom    DateTime?
+  availableUntil   DateTime?
+  status           PlanStatus       @default(DRAFT)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@index([organizationId])
+  @@index([productId])
+  @@map("plans")
+}
+
+enum BillingFrequency {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+// ===================================================================
+// QUOTATIONS
+// ===================================================================
+
+model Quotation {
+  id             String          @id @default(cuid())
+  organizationId String
+  number         String          // e.g. Q/2026/0001
+  customerId     String?         // Customer user or contact name
+  customerName   String?
+  customerEmail  String?
+  status         QuotationStatus @default(DRAFT)
+  validUntil     DateTime?
+  notes          String?
+  subtotal       Decimal         @db.Decimal(12, 2) @default(0)
+  taxAmount      Decimal         @db.Decimal(12, 2) @default(0)
+  discountAmount Decimal         @db.Decimal(12, 2) @default(0)
+  total          Decimal         @db.Decimal(12, 2) @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization  Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lines         QuotationLine[]
+  subscription  Subscription?
+
+  @@index([organizationId])
+  @@map("quotations")
+}
+
+model QuotationLine {
+  id               String  @id @default(cuid())
+  quotationId      String
+  productVariantId String?
+  description      String
+  quantity         Int     @default(1)
+  unitPrice        Decimal @db.Decimal(12, 2)
+  discountPct      Decimal @db.Decimal(5, 2)  @default(0)
+  taxRate          Decimal @db.Decimal(5, 2)  @default(18) // GST 18%
+  subtotal         Decimal @db.Decimal(12, 2)
+  taxAmount        Decimal @db.Decimal(12, 2)
+  total            Decimal @db.Decimal(12, 2)
+  sortOrder        Int     @default(0)
+
+  quotation      Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+
+  @@index([quotationId])
+  @@map("quotation_lines")
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  CANCELLED
+}
+
+// ===================================================================
+// SUBSCRIPTIONS
+// ===================================================================
+
+model Subscription {
+  id             String             @id @default(cuid())
+  organizationId String
+  planId         String
+  quotationId    String?            @unique
+  number         String             // e.g. SUB/2026/0001
+  customerName   String
+  customerEmail  String
+  status         SubscriptionStatus @default(DRAFT)
+  startDate      DateTime
+  endDate        DateTime?
+  nextBillingDate DateTime?
+  quantity       Int                @default(1)
+  unitPrice      Decimal            @db.Decimal(12, 2)
+  discountId     String?
+  discountAmount Decimal            @db.Decimal(12, 2) @default(0)
+  taxRate        Decimal            @db.Decimal(5, 2)  @default(18)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id], onDelete: Restrict)
+  quotation    Quotation?   @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  discount     Discount?    @relation(fields: [discountId], references: [id], onDelete: SetNull)
+  invoices     Invoice[]
+
+  @@index([organizationId])
+  @@index([planId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  DRAFT
+  IN_PROGRESS   // Active / Running
+  PAUSED
+  CLOSED        // Cancelled
+  EXPIRED
+}
+
+// ===================================================================
+// INVOICES
+// ===================================================================
+
+model Invoice {
+  id             String        @id @default(cuid())
+  organizationId String
+  subscriptionId String?
+  number         String        // e.g. INV/2026/0001
+  customerName   String
+  customerEmail  String
+  gstin          String?
+  status         InvoiceStatus @default(DRAFT)
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime
+  subtotal       Decimal       @db.Decimal(12, 2)
+  taxAmount      Decimal       @db.Decimal(12, 2)
+  discountAmount Decimal       @db.Decimal(12, 2) @default(0)
+  total          Decimal       @db.Decimal(12, 2)
+  amountPaid     Decimal       @db.Decimal(12, 2) @default(0)
+  amountDue      Decimal       @db.Decimal(12, 2)
+  notes          String?
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  lines        InvoiceLine[]
+  payments     Payment[]
+
+  @@index([organizationId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @db.Decimal(12, 2)
+  taxRate     Decimal @db.Decimal(5, 2) @default(18)
+  subtotal    Decimal @db.Decimal(12, 2)
+  taxAmount   Decimal @db.Decimal(12, 2)
+  total       Decimal @db.Decimal(12, 2)
+  sortOrder   Int     @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  POSTED      // Sent to customer (Queued)
+  PAID        // Fully paid
+  PARTIAL     // Partially paid
+  OVERDUE     // Past due date
+  CANCELLED
+}
+
+// ===================================================================
+// PAYMENTS
+// ===================================================================
+
+model Payment {
+  id             String        @id @default(cuid())
+  organizationId String
+  invoiceId      String
+  number         String        // e.g. PAY/2026/0001
+  amount         Decimal       @db.Decimal(12, 2)
+  method         PaymentMethod @default(BANK_TRANSFER)
+  reference      String?       // UTR / Cheque no / Transaction ID
+  paidAt         DateTime      @default(now())
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+  CASH
+  CARD
+  NEFT
+  RTGS
+  IMPS
+}
+
+// ===================================================================
+// DISCOUNTS
+// ===================================================================
+
+model Discount {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  code           String
+  type           DiscountType
+  value          Decimal      @db.Decimal(10, 2) // amount or %
+  minAmount      Decimal?     @db.Decimal(12, 2)
+  maxUses        Int?
+  usedCount      Int          @default(0)
+  validFrom      DateTime?
+  validUntil     DateTime?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@map("discounts")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+// ===================================================================
+// TAXES
+// ===================================================================
+
+model Tax {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String  // e.g. "GST 18%", "IGST 18%"
+  rate           Decimal @db.Decimal(5, 2)
+  isDefault      Boolean @default(false)
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("taxes")
+}
